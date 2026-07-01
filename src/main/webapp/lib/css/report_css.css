@@ -1,0 +1,20 @@
+﻿/* Template css รายงาน*/
+ 
+.table_report { FONT-SIZE: 13px; COLOR: #00000; FONT-FAMILY: Tahoma; } /* ขนาดฟ้อนต์ตาราง */
+.table_report thead td, .table_report thead th { /* หัวตาราง */ background: #bed7f9; color: #000; } 
+.table_report,
+.table_report thead td, .table_report thead th,
+.table_report tbody td, .table_report tbody th {
+	border: 1px solid #000;
+	border-collapse: collapse;
+}
+.table_report tbody td, .table_report tbody th {
+	padding: 1px 4px;
+}
+.text-overflow {
+	display:block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border: 0px;	
+}
