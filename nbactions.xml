@@ -10,9 +10,12 @@
             <goals>
                 <goal>package</goal>
             </goals>
+<<<<<<< HEAD
             <activatedProfiles>
                 <activatedProfile>dev-unlocked</activatedProfile>
             </activatedProfiles>
+=======
+>>>>>>> 72516cbb2c8fa9be44041d90fc34b1d7508f3198
             <properties>
                 <netbeans.deploy>true</netbeans.deploy>
                 <netbeans.deploy.clientUrlPart></netbeans.deploy.clientUrlPart>
@@ -28,9 +31,12 @@
             <goals>
                 <goal>package</goal>
             </goals>
+<<<<<<< HEAD
             <activatedProfiles>
                 <activatedProfile>dev-unlocked</activatedProfile>
             </activatedProfiles>
+=======
+>>>>>>> 72516cbb2c8fa9be44041d90fc34b1d7508f3198
             <properties>
                 <netbeans.deploy.debugmode>true</netbeans.deploy.debugmode>
                 <netbeans.deploy>true</netbeans.deploy>
@@ -47,9 +53,12 @@
             <goals>
                 <goal>package</goal>
             </goals>
+<<<<<<< HEAD
             <activatedProfiles>
                 <activatedProfile>dev-unlocked</activatedProfile>
             </activatedProfiles>
+=======
+>>>>>>> 72516cbb2c8fa9be44041d90fc34b1d7508f3198
             <properties>
                 <netbeans.deploy>true</netbeans.deploy>
                 <netbeans.deploy.profilemode>true</netbeans.deploy.profilemode>
