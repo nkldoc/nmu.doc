@@ -250,7 +250,7 @@
     async function checkApi() {
       const status = document.querySelector("#apiStatus");
       try {
-        const response = await fetch("./api/esign/health", { cache: "no-store" });
+        const response = await fetch("../api/esign/health", { cache: "no-store" });
         status.textContent = response.ok ? "System online" : "Welcome page ready";
       } catch (error) {
         status.textContent = "Welcome page ready";

@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spring Boot E-Signature Template Builder</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f7;
+      --surface: #fff;
+      --panel: #f7f9fc;
+      --ink: #1f2937;
+      --muted: #667085;
+      --line: #d5dce8;
+      --blue: #2563eb;
+      --blue-soft: #e8f0ff;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+      --shadow: 0 14px 34px rgba(15, 23, 42, .12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 18px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      min-width: 160px;
+      justify-content: flex-end;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr) 360px;
+      min-height: 0;
+    }
+
+    .left,
+    .right {
+      background: var(--panel);
+      border-color: var(--line);
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .left {
+      border-right: 1px solid var(--line);
+    }
+
+    .right {
+      border-left: 1px solid var(--line);
+    }
+
+    .center {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background: #e9edf4;
+    }
+
+    .steps {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--muted);
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #e4e9f2;
+      color: #475467;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .step.active {
+      color: var(--ink);
+      background: #fff;
+      border-color: #b9c8e8;
+    }
+
+    .step.done .step-number {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel h2 {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 13px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #b8c4d6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 9px 10px;
+      min-height: 38px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .button {
+      min-height: 36px;
+      border: 1px solid #b8c4d6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 11px;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background: var(--blue-soft);
+      border-color: #9bb4e8;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .button.danger {
+      color: #fff;
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    .button.small {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .role-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .role-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .role-row.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, .12);
+    }
+
+    .role-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .role-email {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .viewer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    .viewer-title {
+      min-width: 0;
+    }
+
+    .viewer-title h2 {
+      font-size: 16px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .viewer-title p {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .viewer {
+      min-height: 0;
+      overflow: auto;
+      padding: 22px;
+      background:
+        linear-gradient(45deg, #dfe5ee 25%, transparent 25%),
+        linear-gradient(-45deg, #dfe5ee 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #dfe5ee 75%),
+        linear-gradient(-45deg, transparent 75%, #dfe5ee 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    }
+
+    .pdf-page {
+      position: relative;
+      width: min(100%, 640px);
+      aspect-ratio: 210 / 297;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #cfd6e3;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .pdf-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .placeholder-page {
+      position: absolute;
+      inset: 0;
+      padding: 56px 58px;
+      color: #344054;
+    }
+
+    .placeholder-page h3 {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 42px;
+    }
+
+    .fake-line {
+      height: 9px;
+      border-radius: 99px;
+      background: #edf1f7;
+      margin: 14px 0;
+    }
+
+    .signature-box {
+      position: absolute;
+      left: 44%;
+      top: 54%;
+      width: 190px;
+      height: 76px;
+      border: 2px dashed currentColor;
+      background: rgba(255, 255, 255, .76);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: move;
+      touch-action: none;
+      user-select: none;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .12);
+    }
+
+    .signature-box::after {
+      content: "";
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: currentColor;
+      cursor: nwse-resize;
+    }
+
+    .signature-box.selected {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .22), 0 8px 18px rgba(15, 23, 42, .12);
+    }
+
+    .box-meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 3px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .table th,
+    .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 4px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      color: #344054;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .notice {
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #9a3412;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1120px) {
+      .workspace {
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+
+      .right {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .viewer-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .status,
+      .page-controls {
+        justify-content: flex-start;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .left {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .viewer {
+        padding: 12px;
+      }
+
+      .pdf-page {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">ES</div>
+        <div>
+          <h1>Spring Boot E-Signature System</h1>
+          <p class="subtitle">Template builder for PDFBox, WorkflowEngine, MSSQL, and legacy ExtJS/PHP</p>
+        </div>
+      </div>
+      <div class="status"><span class="dot"></span><span id="saveStatus">Ready</span></div>
+    </header>
+
+    <section class="workspace">
+      <aside class="left">
+        <div class="steps" id="steps"></div>
+
+        <section class="panel">
+          <h2>Create Sign Group</h2>
+          <div class="field">
+            <label for="groupName">Sign Group</label>
+            <input id="groupName" value="Purchase Approval" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="templateCode">Template Code</label>
+            <input id="templateCode" value="PO-APPROVAL-001" autocomplete="off">
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Upload Sample PDF</h2>
+          <div class="field">
+            <label for="pdfFile">Sample PDF</label>
+            <input id="pdfFile" type="file" accept="application/pdf">
+          </div>
+          <div class="actions">
+            <button class="button" id="scanPdf" type="button">Scan PDF Pages</button>
+            <button class="button" id="clearPdf" type="button">Clear</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Define Roles</h2>
+          <div class="field">
+            <label for="roleName">Role Name</label>
+            <input id="roleName" placeholder="Requester">
+          </div>
+          <div class="field">
+            <label for="roleEmail">Default Email</label>
+            <input id="roleEmail" placeholder="requester@company.com">
+          </div>
+          <div class="actions">
+            <button class="button primary" id="addRole" type="button">Add Role</button>
+          </div>
+          <div class="role-list" id="roleList" style="margin-top: 12px"></div>
+        </section>
+      </aside>
+
+      <section class="center">
+        <div class="viewer-toolbar">
+          <div class="viewer-title">
+            <h2 id="docTitle">No PDF uploaded</h2>
+            <p id="docMeta">Upload a sample PDF, then place signature boxes on each page.</p>
+          </div>
+          <div class="page-controls">
+            <button class="button small" id="prevPage" type="button">Prev</button>
+            <span class="badge" id="pageBadge">Page 1 / 1</span>
+            <button class="button small" id="nextPage" type="button">Next</button>
+            <button class="button primary" id="addBox" type="button">Place Signature Box</button>
+          </div>
+        </div>
+
+        <div class="viewer">
+          <div class="pdf-page" id="pdfPage">
+            <canvas class="pdf-canvas" id="pdfCanvas"></canvas>
+            <div class="placeholder-page" id="placeholderPage">
+              <h3>Page 1</h3>
+              <div class="fake-line" style="width: 82%"></div>
+              <div class="fake-line" style="width: 96%"></div>
+              <div class="fake-line" style="width: 74%"></div>
+              <div class="fake-line" style="width: 91%"></div>
+              <div class="fake-line" style="width: 67%"></div>
+              <div class="fake-line" style="width: 88%; margin-top: 70px"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right">
+        <section class="panel">
+          <h2>Preview</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Page</th>
+                <th>Box</th>
+              </tr>
+            </thead>
+            <tbody id="boxTable"></tbody>
+          </table>
+        </section>
+
+        <section class="panel">
+          <h2>Assign Workflow</h2>
+          <div class="field">
+            <label for="workflowName">WorkflowEngine Process</label>
+            <input id="workflowName" value="WF_PO_APPROVAL">
+          </div>
+          <div class="field">
+            <label for="legacyCallback">ExtJS/PHP Callback URL</label>
+            <input id="legacyCallback" value="/legacy/esign/callback.php">
+          </div>
+          <div class="field">
+            <label for="mssqlTable">MSSQL Template Table</label>
+            <input id="mssqlTable" value="esign_template">
+          </div>
+        </section>
+
+        <div class="notice">
+          Save Template generates the JSON contract for Spring Boot. PDFBox uses each normalized box coordinate to draw visible signature fields before signing.
+        </div>
+
+        <section class="panel">
+          <h2>Production Use</h2>
+          <div class="actions">
+            <button class="button primary" id="saveTemplate" type="button">Save Template</button>
+            <button class="button" id="exportJson" type="button">Export JSON</button>
+            <button class="button danger" id="deleteBox" type="button">Delete Box</button>
+          </div>
+          <div class="field" style="margin-top: 12px">
+            <label for="payload">Spring Boot Payload</label>
+            <textarea id="payload" readonly></textarea>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module">
+    const state = {
+      groupName: "Purchase Approval",
+      templateCode: "PO-APPROVAL-001",
+      pdfName: "",
+      pdfUrl: "",
+      pdfDoc: null,
+      pageCount: 1,
+      currentPage: 1,
+      selectedRoleId: "role-requester",
+      selectedBoxId: "",
+      roles: [
+        { id: "role-requester", name: "Requester", email: "requester@company.com", color: "#2563eb" },
+        { id: "role-finance", name: "Finance", email: "finance@company.com", color: "#d97706" },
+        { id: "role-director", name: "Director", email: "director@company.com", color: "#16a34a" }
+      ],
+      boxes: [
+        { id: crypto.randomUUID(), roleId: "role-requester", page: 1, x: .34, y: .58, w: .31, h: .085 }
+      ]
+    };
+
+    const stepLabels = [
+      "Create Sign Group",
+      "Upload Sample PDF",
+      "Scan PDF Pages",
+      "Define Roles",
+      "Place Signature Boxes",
+      "Preview",
+      "Save Template",
+      "Assign Workflow",
+      "Production Use"
+    ];
+
+    const els = {
+      steps: document.querySelector("#steps"),
+      groupName: document.querySelector("#groupName"),
+      templateCode: document.querySelector("#templateCode"),
+      pdfFile: document.querySelector("#pdfFile"),
+      scanPdf: document.querySelector("#scanPdf"),
+      clearPdf: document.querySelector("#clearPdf"),
+      roleName: document.querySelector("#roleName"),
+      roleEmail: document.querySelector("#roleEmail"),
+      addRole: document.querySelector("#addRole"),
+      roleList: document.querySelector("#roleList"),
+      docTitle: document.querySelector("#docTitle"),
+      docMeta: document.querySelector("#docMeta"),
+      pageBadge: document.querySelector("#pageBadge"),
+      prevPage: document.querySelector("#prevPage"),
+      nextPage: document.querySelector("#nextPage"),
+      addBox: document.querySelector("#addBox"),
+      pdfPage: document.querySelector("#pdfPage"),
+      pdfCanvas: document.querySelector("#pdfCanvas"),
+      placeholderPage: document.querySelector("#placeholderPage"),
+      boxTable: document.querySelector("#boxTable"),
+      workflowName: document.querySelector("#workflowName"),
+      legacyCallback: document.querySelector("#legacyCallback"),
+      mssqlTable: document.querySelector("#mssqlTable"),
+      saveTemplate: document.querySelector("#saveTemplate"),
+      exportJson: document.querySelector("#exportJson"),
+      deleteBox: document.querySelector("#deleteBox"),
+      payload: document.querySelector("#payload"),
+      saveStatus: document.querySelector("#saveStatus")
+    };
+
+    let dragState = null;
+    let pdfjs = null;
+
+    try {
+      pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+    } catch (error) {
+      console.warn("PDF.js could not be loaded. Placeholder preview will still work.", error);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function roleById(roleId) {
+      return state.roles.find((role) => role.id === roleId) || state.roles[0];
+    }
+
+    function setStatus(text) {
+      els.saveStatus.textContent = text;
+    }
+
+    function getPayload() {
+      return {
+        signGroup: {
+          name: els.groupName.value.trim(),
+          templateCode: els.templateCode.value.trim()
+        },
+        samplePdf: {
+          fileName: state.pdfName || null,
+          pageCount: state.pageCount
+        },
+        roles: state.roles.map((role, index) => ({
+          id: role.id,
+          name: role.name,
+          defaultEmail: role.email,
+          signingOrder: index + 1
+        })),
+        signatureFields: state.boxes.map((box) => {
+          const role = roleById(box.roleId);
+          return {
+            id: box.id,
+            roleId: role.id,
+            roleName: role.name,
+            page: box.page,
+            xRatio: Number(box.x.toFixed(5)),
+            yRatio: Number(box.y.toFixed(5)),
+            widthRatio: Number(box.w.toFixed(5)),
+            heightRatio: Number(box.h.toFixed(5)),
+            pdfBoxAnchor: "top-left"
+          };
+        }),
+        workflow: {
+          engineProcess: els.workflowName.value.trim(),
+          legacyCallbackUrl: els.legacyCallback.value.trim(),
+          mssqlTable: els.mssqlTable.value.trim()
+        },
+        productionApi: {
+          saveTemplate: "POST /api/esign/templates",
+          startSigning: "POST /api/esign/requests",
+          pdfBoxSign: "POST /api/esign/requests/{requestId}/sign"
+        }
+      };
+    }
+
+    function completedStepCount() {
+      let done = 1;
+      if (state.pdfName) done = 2;
+      if (state.pageCount > 1 || state.pdfName) done = 3;
+      if (state.roles.length > 0) done = 4;
+      if (state.boxes.length > 0) done = 6;
+      if (localStorage.getItem("esign-template")) done = 9;
+      return done;
+    }
+
+    function renderSteps() {
+      const done = completedStepCount();
+      els.steps.innerHTML = stepLabels.map((label, index) => {
+        const step = index + 1;
+        const className = step < done ? "step done" : step === done ? "step active" : "step";
+        const mark = step < done ? "✓" : step;
+        return `<div class="${className}"><div class="step-number">${mark}</div><div>${label}</div></div>`;
+      }).join("");
+    }
+
+    function renderRoles() {
+      els.roleList.innerHTML = state.roles.map((role) => `
+        <div class="role-row ${role.id === state.selectedRoleId ? "active" : ""}" data-role-id="${role.id}">
+          <div>
+            <div class="role-name" style="color:${role.color}">${role.name}</div>
+            <div class="role-email">${role.email || "No default email"}</div>
+          </div>
+          <button class="button small" type="button" data-remove-role="${role.id}">Remove</button>
+        </div>
+      `).join("");
+
+      els.roleList.querySelectorAll("[data-role-id]").forEach((row) => {
+        row.addEventListener("click", (event) => {
+          if (event.target.matches("[data-remove-role]")) return;
+          state.selectedRoleId = row.dataset.roleId;
+          render();
+        });
+      });
+
+      els.roleList.querySelectorAll("[data-remove-role]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (state.roles.length === 1) return;
+          const roleId = button.dataset.removeRole;
+          state.roles = state.roles.filter((role) => role.id !== roleId);
+          state.boxes = state.boxes.filter((box) => box.roleId !== roleId);
+          state.selectedRoleId = state.roles[0].id;
+          state.selectedBoxId = "";
+          render();
+        });
+      });
+    }
+
+    function renderDocMeta() {
+      els.docTitle.textContent = state.pdfName || "No PDF uploaded";
+      els.docMeta.textContent = `${state.pageCount} page${state.pageCount > 1 ? "s" : ""} scanned · ${state.boxes.length} signature box${state.boxes.length === 1 ? "" : "es"}`;
+      els.pageBadge.textContent = `Page ${state.currentPage} / ${state.pageCount}`;
+      els.prevPage.disabled = state.currentPage <= 1;
+      els.nextPage.disabled = state.currentPage >= state.pageCount;
+      els.placeholderPage.querySelector("h3").textContent = `Page ${state.currentPage}`;
+    }
+
+    function renderBoxes() {
+      els.pdfPage.querySelectorAll(".signature-box").forEach((box) => box.remove());
+      const pageRect = els.pdfPage.getBoundingClientRect();
+
+      state.boxes
+        .filter((box) => box.page === state.currentPage)
+        .forEach((box) => {
+          const role = roleById(box.roleId);
+          const node = document.createElement("div");
+          node.className = `signature-box ${box.id === state.selectedBoxId ? "selected" : ""}`;
+          node.dataset.boxId = box.id;
+          node.style.color = role.color;
+          node.style.left = `${box.x * pageRect.width}px`;
+          node.style.top = `${box.y * pageRect.height}px`;
+          node.style.width = `${box.w * pageRect.width}px`;
+          node.style.height = `${box.h * pageRect.height}px`;
+          node.innerHTML = `<div>${role.name}<div class="box-meta">Sign here</div></div>`;
+          els.pdfPage.appendChild(node);
+        });
+    }
+
+    function renderTable() {
+      if (!state.boxes.length) {
+        els.boxTable.innerHTML = `<tr><td colspan="3">No signature boxes yet.</td></tr>`;
+        return;
+      }
+
+      els.boxTable.innerHTML = state.boxes.map((box) => {
+        const role = roleById(box.roleId);
+        return `
+          <tr>
+            <td><span style="color:${role.color}; font-weight:700">${role.name}</span></td>
+            <td>${box.page}</td>
+            <td>${Math.round(box.w * 100)}% x ${Math.round(box.h * 100)}%</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderPayload() {
+      els.payload.value = JSON.stringify(getPayload(), null, 2);
+    }
+
+    async function renderPdfPage() {
+      if (!state.pdfDoc) {
+        els.pdfCanvas.style.display = "none";
+        els.placeholderPage.classList.remove("hidden");
+        return;
+      }
+
+      const page = await state.pdfDoc.getPage(state.currentPage);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = els.pdfCanvas;
+      const context = canvas.getContext("2d");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.display = "block";
+      els.placeholderPage.classList.add("hidden");
+      await page.render({ canvasContext: context, viewport }).promise;
+    }
+
+    function render() {
+      renderSteps();
+      renderRoles();
+      renderDocMeta();
+      renderBoxes();
+      renderTable();
+      renderPayload();
+    }
+
+    async function scanPdf(file) {
+      if (!file) return;
+
+      state.pdfName = file.name;
+      if (state.pdfUrl) URL.revokeObjectURL(state.pdfUrl);
+      state.pdfUrl = URL.createObjectURL(file);
+
+      if (!pdfjs) {
+        state.pageCount = 1;
+        state.pdfDoc = null;
+        setStatus("PDF.js unavailable; preview placeholder active");
+        render();
+        return;
+      }
+
+      const bytes = await file.arrayBuffer();
+      state.pdfDoc = await pdfjs.getDocument({ data: bytes }).promise;
+      state.pageCount = state.pdfDoc.numPages;
+      state.currentPage = 1;
+      setStatus(`Scanned ${state.pageCount} page(s)`);
+      await renderPdfPage();
+      render();
+    }
+
+    function addBox() {
+      if (!state.selectedRoleId) return;
+      const offset = Math.min(state.boxes.filter((box) => box.page === state.currentPage).length * .035, .18);
+      const box = {
+        id: crypto.randomUUID(),
+        roleId: state.selectedRoleId,
+        page: state.currentPage,
+        x: .34 + offset,
+        y: .58 + offset,
+        w: .31,
+        h: .085
+      };
+      state.boxes.push(box);
+      state.selectedBoxId = box.id;
+      render();
+    }
+
+    function exportPayload() {
+      const blob = new Blob([JSON.stringify(getPayload(), null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${els.templateCode.value.trim() || "esign-template"}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function saveTemplate() {
+      localStorage.setItem("esign-template", JSON.stringify(getPayload()));
+      setStatus("Template saved for production mapping");
+      render();
+    }
+
+    function pointerToBox(event) {
+      const pageRect = els.pdfPage.getBoundingClientRect();
+      const node = event.target.closest(".signature-box");
+      if (!node) return;
+      const box = state.boxes.find((item) => item.id === node.dataset.boxId);
+      if (!box) return;
+
+      const boxRect = node.getBoundingClientRect();
+      const isResize =
+        event.clientX > boxRect.right - 20 &&
+        event.clientY > boxRect.bottom - 20;
+
+      state.selectedBoxId = box.id;
+      dragState = {
+        mode: isResize ? "resize" : "move",
+        box,
+        pageWidth: pageRect.width,
+        pageHeight: pageRect.height,
+        startX: event.clientX,
+        startY: event.clientY,
+        x: box.x,
+        y: box.y,
+        w: box.w,
+        h: box.h
+      };
+
+      node.setPointerCapture(event.pointerId);
+      render();
+    }
+
+    els.pdfPage.addEventListener("pointerdown", (event) => {
+      if (!event.target.closest(".signature-box")) return;
+      event.preventDefault();
+      pointerToBox(event);
+    });
+
+    els.pdfPage.addEventListener("pointermove", (event) => {
+      if (!dragState) return;
+      const dx = (event.clientX - dragState.startX) / dragState.pageWidth;
+      const dy = (event.clientY - dragState.startY) / dragState.pageHeight;
+
+      if (dragState.mode === "resize") {
+        dragState.box.w = clamp(dragState.w + dx, .12, 1 - dragState.box.x);
+        dragState.box.h = clamp(dragState.h + dy, .045, 1 - dragState.box.y);
+      } else {
+        dragState.box.x = clamp(dragState.x + dx, 0, 1 - dragState.box.w);
+        dragState.box.y = clamp(dragState.y + dy, 0, 1 - dragState.box.h);
+      }
+
+      renderBoxes();
+      renderTable();
+      renderPayload();
+    });
+
+    els.pdfPage.addEventListener("pointerup", () => {
+      dragState = null;
+    });
+
+    els.pdfPage.addEventListener("pointercancel", () => {
+      dragState = null;
+    });
+
+    els.pdfPage.addEventListener("click", (event) => {
+      if (event.target.closest(".signature-box")) return;
+      const pageRect = els.pdfPage.getBoundingClientRect();
+      const box = state.boxes.find((item) => item.id === state.selectedBoxId);
+      if (!box) return;
+      box.x = clamp((event.clientX - pageRect.left) / pageRect.width - box.w / 2, 0, 1 - box.w);
+      box.y = clamp((event.clientY - pageRect.top) / pageRect.height - box.h / 2, 0, 1 - box.h);
+      render();
+    });
+
+    els.addRole.addEventListener("click", () => {
+      const name = els.roleName.value.trim();
+      if (!name) return;
+      const colors = ["#2563eb", "#d97706", "#16a34a", "#7c3aed", "#dc2626", "#0f766e"];
+      const role = {
+        id: `role-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+        name,
+        email: els.roleEmail.value.trim(),
+        color: colors[state.roles.length % colors.length]
+      };
+      state.roles.push(role);
+      state.selectedRoleId = role.id;
+      els.roleName.value = "";
+      els.roleEmail.value = "";
+      render();
+    });
+
+    els.scanPdf.addEventListener("click", async () => {
+      try {
+        await scanPdf(els.pdfFile.files[0]);
+      } catch (error) {
+        setStatus("PDF scan failed");
+        console.error(error);
+      }
+    });
+
+    els.pdfFile.addEventListener("change", async () => {
+      if (els.pdfFile.files[0]) await scanPdf(els.pdfFile.files[0]);
+    });
+
+    els.clearPdf.addEventListener("click", () => {
+      state.pdfName = "";
+      state.pdfDoc = null;
+      state.pageCount = 1;
+      state.currentPage = 1;
+      if (state.pdfUrl) URL.revokeObjectURL(state.pdfUrl);
+      state.pdfUrl = "";
+      setStatus("Ready");
+      renderPdfPage();
+      render();
+    });
+
+    els.prevPage.addEventListener("click", async () => {
+      state.currentPage = clamp(state.currentPage - 1, 1, state.pageCount);
+      await renderPdfPage();
+      render();
+    });
+
+    els.nextPage.addEventListener("click", async () => {
+      state.currentPage = clamp(state.currentPage + 1, 1, state.pageCount);
+      await renderPdfPage();
+      render();
+    });
+
+    els.addBox.addEventListener("click", addBox);
+
+    els.deleteBox.addEventListener("click", () => {
+      if (!state.selectedBoxId) return;
+      state.boxes = state.boxes.filter((box) => box.id !== state.selectedBoxId);
+      state.selectedBoxId = "";
+      render();
+    });
+
+    els.saveTemplate.addEventListener("click", saveTemplate);
+    els.exportJson.addEventListener("click", exportPayload);
+
+    [els.groupName, els.templateCode, els.workflowName, els.legacyCallback, els.mssqlTable].forEach((input) => {
+      input.addEventListener("input", renderPayload);
+    });
+
+    window.addEventListener("resize", renderBoxes);
+
+    render();
+  </script>
+</body>
+</html>
