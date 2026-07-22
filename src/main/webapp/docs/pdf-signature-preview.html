@@ -539,9 +539,7 @@
             </header>
 
             <section class="workspace">
-                <aside class="left">
-                    <div class="steps" id="steps"></div>
-
+                <aside class="left"> 
                     <section class="panel">
                         <h2>Create Sign Group</h2>
                         <div class="field">
@@ -577,7 +575,8 @@
                             <input id="roleEmail" placeholder="requester@company.com">
                         </div>
                         <div class="actions">
-                            <button class="button primary" id="addRole" type="button">Add Role</button>
+                            <button class="button primary" id="addRole" type="button">Save Role to EIS_ERP</button>
+                            <button class="button" id="refreshRoles" type="button">Refresh Roles</button>
                         </div>
                         <div class="role-list" id="roleList" style="margin-top: 12px"></div>
                     </section>
@@ -650,8 +649,13 @@
 
                     <section class="panel">
                         <h2>Production Use</h2>
+                        <div class="field">
+                            <label for="templateFile">Template JSON</label>
+                            <input id="templateFile" type="file" accept="application/json,.json">
+                        </div>
                         <div class="actions">
                             <button class="button primary" id="saveTemplate" type="button">Save Template</button>
+                            <button class="button primary" id="loadTemplate" type="button">Load Template</button>
                             <button class="button" id="exportJson" type="button">Export JSON</button>
                             <button class="button danger" id="deleteBox" type="button">Delete Box</button>
                         </div>
@@ -660,6 +664,8 @@
                             <textarea id="payload" readonly></textarea>
                         </div>
                     </section>
+
+                    <div class="steps" id="steps"></div>
                 </aside>
             </section>
         </main>
@@ -681,7 +687,7 @@
                     {id: "role-director", name: "Director", email: "director@company.com", color: "#16a34a"}
                 ],
                 boxes: [
-                    {id: crypto.randomUUID(), roleId: "role-requester", page: 1, x: .34, y: .58, w: .31, h: .085}
+                    {id: crypto.randomUUID(), roleId: "role-requester", page: 1, x: .34, y: .58, w: .2, h: .05}
                 ]
             };
 
@@ -707,6 +713,7 @@
                 roleName: document.querySelector("#roleName"),
                 roleEmail: document.querySelector("#roleEmail"),
                 addRole: document.querySelector("#addRole"),
+                refreshRoles: document.querySelector("#refreshRoles"),
                 roleList: document.querySelector("#roleList"),
                 docTitle: document.querySelector("#docTitle"),
                 docMeta: document.querySelector("#docMeta"),
@@ -721,7 +728,9 @@
                 workflowName: document.querySelector("#workflowName"),
                 legacyCallback: document.querySelector("#legacyCallback"),
                 mssqlTable: document.querySelector("#mssqlTable"),
+                templateFile: document.querySelector("#templateFile"),
                 saveTemplate: document.querySelector("#saveTemplate"),
+                loadTemplate: document.querySelector("#loadTemplate"),
                 exportJson: document.querySelector("#exportJson"),
                 deleteBox: document.querySelector("#deleteBox"),
                 payload: document.querySelector("#payload"),
@@ -730,6 +739,10 @@
 
             let dragState = null;
             let pdfjs = null;
+            const apiBase = new URLSearchParams(location.search).get("apiBase") ||
+                    (location.protocol === "file:" ? "http://dev-eis.nmu.ac.th/reports/api/esign" : "../api/esign");
+            const roleApiUrl = `${apiBase.replace(/\/$/, "")}/roles`;
+            const roleColors = ["#2563eb", "#d97706", "#16a34a", "#7c3aed", "#dc2626", "#0f766e"];
 
             try {
                 pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");
@@ -748,6 +761,39 @@
 
             function setStatus(text) {
                 els.saveStatus.textContent = text;
+            }
+
+            function roleIdFromName(name) {
+                return `role-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || Date.now()}`;
+            }
+
+            function normalizeRole(role, index) {
+                return {
+                    id: role.id || role.roleId || roleIdFromName(role.name || `Role ${index + 1}`),
+                    name: role.name || role.roleName || `Role ${index + 1}`,
+                    email: role.defaultEmail || role.email || "",
+                    signingOrder: Number(role.signingOrder || index + 1),
+                    active: role.active !== false,
+                    color: role.color || roleColors[index % roleColors.length]
+                };
+            }
+
+            async function readJsonResponse(response) {
+                const text = await response.text();
+                try {
+                    return text ? JSON.parse(text) : {};
+                } catch (error) {
+                    return {success: false, message: text || error.message};
+                }
+            }
+
+            function escapeHtml(value) {
+                return String(value ?? "")
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#39;");
             }
 
             function getPayload() {
@@ -820,12 +866,12 @@
 
             function renderRoles() {
                 els.roleList.innerHTML = state.roles.map((role) => `
-              <div class="role-row ${role.id === state.selectedRoleId ? "active" : ""}" data-role-id="${role.id}">
+              <div class="role-row ${role.id === state.selectedRoleId ? "active" : ""}" data-role-id="${escapeHtml(role.id)}">
                 <div>
-                  <div class="role-name" style="color:${role.color}">${role.name}</div>
-                  <div class="role-email">${role.email || "No default email"}</div>
+                  <div class="role-name" style="color:${role.color}">${escapeHtml(role.name)} <span class="badge">#${escapeHtml(role.signingOrder || 1)}</span></div>
+                  <div class="role-email">${escapeHtml(role.email || "No default email")}${role.active === false ? " - Inactive" : ""}</div>
                 </div>
-                <button class="button small" type="button" data-remove-role="${role.id}">Remove</button>
+                <button class="button small" type="button" data-remove-role="${escapeHtml(role.id)}">Remove</button>
               </div>
             `).join("");
 
@@ -834,6 +880,9 @@
                         if (event.target.matches("[data-remove-role]"))
                             return;
                         state.selectedRoleId = row.dataset.roleId;
+                        const role = roleById(row.dataset.roleId);
+                        els.roleName.value = role?.name || "";
+                        els.roleEmail.value = role?.email || "";
                         render();
                     });
                 });
@@ -967,8 +1016,8 @@
                     page: state.currentPage,
                     x: .34 + offset,
                     y: .58 + offset,
-                    w: .31,
-                    h: .085
+                    w: .2,
+                    h: .05
                 };
                 state.boxes.push(box);
                 state.selectedBoxId = box.id;
@@ -989,6 +1038,151 @@
                 localStorage.setItem("esign-template", JSON.stringify(getPayload()));
                 setStatus("Template saved for production mapping");
                 render();
+            }
+
+            async function loadRolesFromDatabase() {
+                try {
+                    setStatus("Loading roles from EIS_ERP");
+                    const data = await readJsonResponse(await fetch(roleApiUrl, {cache: "no-store"}));
+                    if (!data.success) {
+                        setStatus(data.message || "Role load failed");
+                        return;
+                    }
+
+                    state.roles = (data.roles || []).map(normalizeRole).filter((role) => role.active !== false);
+                    if (!state.roles.length) {
+                        state.roles = [{id: "role-signer", name: "Signer", email: "", signingOrder: 1, active: true, color: roleColors[0]}];
+                    }
+                    state.boxes = state.boxes.filter((box) => state.roles.some((role) => role.id === box.roleId));
+                    state.selectedRoleId = state.roles[0].id;
+                    state.selectedBoxId = state.boxes[0]?.id || "";
+                    els.roleName.value = state.roles[0].name;
+                    els.roleEmail.value = state.roles[0].email || "";
+                    setStatus(`Loaded ${state.roles.length} role(s) from EIS_ERP`);
+                    render();
+                } catch (error) {
+                    setStatus("Role load failed");
+                    console.error(error);
+                }
+            }
+
+            async function saveRoleToDatabase() {
+                const name = els.roleName.value.trim();
+                if (!name) {
+                    setStatus("Role Name is required");
+                    return;
+                }
+
+                const selected = roleById(state.selectedRoleId);
+                const role = {
+                    id: selected && selected.name === name ? selected.id : roleIdFromName(name),
+                    name,
+                    defaultEmail: els.roleEmail.value.trim(),
+                    signingOrder: selected?.signingOrder || state.roles.length + 1,
+                    active: true
+                };
+
+                try {
+                    setStatus("Saving role to EIS_ERP");
+                    const data = await readJsonResponse(await fetch(roleApiUrl, {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(role)
+                    }));
+                    if (!data.success) {
+                        setStatus(data.message || "Role save failed");
+                        return;
+                    }
+
+                    const savedRole = normalizeRole(data.role || role, state.roles.length);
+                    const index = state.roles.findIndex((item) => item.id === savedRole.id);
+                    if (index >= 0) {
+                        savedRole.color = state.roles[index].color;
+                        state.roles[index] = savedRole;
+                    } else {
+                        state.roles.push(savedRole);
+                    }
+                    state.selectedRoleId = savedRole.id;
+                    els.roleName.value = "";
+                    els.roleEmail.value = "";
+                    setStatus("Role saved to EIS_ERP");
+                    await loadRolesFromDatabase();
+                } catch (error) {
+                    setStatus("Role save failed");
+                    console.error(error);
+                }
+            }
+
+            function applyTemplate(template) {
+                const signGroup = template.signGroup || {};
+                const samplePdf = template.samplePdf || {};
+                const workflow = template.workflow || {};
+
+                els.groupName.value = signGroup.name || "";
+                els.templateCode.value = signGroup.templateCode || "";
+                els.workflowName.value = workflow.engineProcess || "";
+                els.legacyCallback.value = workflow.legacyCallbackUrl || "";
+                els.mssqlTable.value = workflow.mssqlTable || "";
+
+                state.pdfName = samplePdf.fileName || "";
+                state.pdfDoc = null;
+                state.pageCount = Math.max(1, Number(samplePdf.pageCount) || 1);
+                state.currentPage = clamp(state.currentPage, 1, state.pageCount);
+                if (state.pdfUrl)
+                    URL.revokeObjectURL(state.pdfUrl);
+                state.pdfUrl = "";
+                els.pdfFile.value = "";
+
+                state.roles = (template.roles || []).map((role, index) => ({
+                        id: role.id || `role-${index + 1}`,
+                        name: role.name || `Role ${index + 1}`,
+                        email: role.defaultEmail || role.email || "",
+                        signingOrder: Number(role.signingOrder || index + 1),
+                        active: role.active !== false,
+                        color: role.color || roleColors[index % roleColors.length]
+                    }));
+
+                if (!state.roles.length) {
+                    state.roles = [{id: "role-signer", name: "Signer", email: "", signingOrder: 1, active: true, color: roleColors[0]}];
+                }
+
+                state.boxes = (template.signatureFields || []).map((field) => {
+                    const role = state.roles.find((item) => item.id === field.roleId) || state.roles[0];
+                    return {
+                        id: field.id || crypto.randomUUID(),
+                        roleId: role.id,
+                        page: clamp(Number(field.page) || 1, 1, state.pageCount),
+                        x: clamp(Number(field.xRatio) || 0, 0, 1),
+                        y: clamp(Number(field.yRatio) || 0, 0, 1),
+                        w: clamp(Number(field.widthRatio) || .2, .01, 1),
+                        h: clamp(Number(field.heightRatio) || .05, .01, 1)
+                    };
+                }).map((box) => ({
+                        ...box,
+                        x: clamp(box.x, 0, 1 - box.w),
+                        y: clamp(box.y, 0, 1 - box.h)
+                    }));
+
+                state.selectedRoleId = state.roles[0].id;
+                state.selectedBoxId = state.boxes[0]?.id || "";
+                renderPdfPage();
+                render();
+            }
+
+            async function loadTemplate() {
+                try {
+                    const file = els.templateFile.files[0];
+                    const raw = file ? await file.text() : localStorage.getItem("esign-template");
+                    if (!raw) {
+                        setStatus("Select a JSON template first");
+                        return;
+                    }
+                    applyTemplate(JSON.parse(raw));
+                    setStatus(file ? `Loaded ${file.name}` : "Loaded saved template");
+                } catch (error) {
+                    setStatus("Template JSON load failed");
+                    console.error(error);
+                }
             }
 
             function pointerToBox(event) {
@@ -1069,23 +1263,8 @@
                 render();
             });
 
-            els.addRole.addEventListener("click", () => {
-                const name = els.roleName.value.trim();
-                if (!name)
-                    return;
-                const colors = ["#2563eb", "#d97706", "#16a34a", "#7c3aed", "#dc2626", "#0f766e"];
-                const role = {
-                    id: `role-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
-                    name,
-                    email: els.roleEmail.value.trim(),
-                    color: colors[state.roles.length % colors.length]
-                };
-                state.roles.push(role);
-                state.selectedRoleId = role.id;
-                els.roleName.value = "";
-                els.roleEmail.value = "";
-                render();
-            });
+            els.addRole.addEventListener("click", saveRoleToDatabase);
+            els.refreshRoles.addEventListener("click", loadRolesFromDatabase);
 
             els.scanPdf.addEventListener("click", async () => {
                 try {
@@ -1137,6 +1316,7 @@
             });
 
             els.saveTemplate.addEventListener("click", saveTemplate);
+            els.loadTemplate.addEventListener("click", loadTemplate);
             els.exportJson.addEventListener("click", exportPayload);
 
             [els.groupName, els.templateCode, els.workflowName, els.legacyCallback, els.mssqlTable].forEach((input) => {
@@ -1146,6 +1326,7 @@
             window.addEventListener("resize", renderBoxes);
 
             render();
+            loadRolesFromDatabase();
         </script>
     </body>
 </html>

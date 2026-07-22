@@ -44,6 +44,10 @@
         </multipart-config>
     </servlet>
     <servlet>
+        <servlet-name>AuthApiServlet</servlet-name>
+        <servlet-class>com.eis.esign.AuthApiServlet</servlet-class>
+    </servlet>
+    <servlet>
         <servlet-name>PdfManagerServlet</servlet-name>
         <servlet-class>com.eis.pdf.PdfManagerServlet</servlet-class>
         <multipart-config />
@@ -51,6 +55,10 @@
     <servlet-mapping>
         <servlet-name>ESignApiServlet</servlet-name>
         <url-pattern>/api/esign/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>AuthApiServlet</servlet-name>
+        <url-pattern>/api/auth/*</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>PdfManagerServlet</servlet-name>

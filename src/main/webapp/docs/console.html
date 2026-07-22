@@ -3,557 +3,676 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EIS-SIGN Console</title>
+  <title>E-Signature Console</title>
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      color-scheme: light;
+      --bg: #eef2f7;
+      --surface: #fff;
+      --panel: #f7f9fc;
+      --ink: #1f2937;
+      --muted: #667085;
+      --line: #d5dce8;
+      --blue: #2563eb;
+      --blue-soft: #e8f0ff;
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: Arial, "Noto Sans Thai", sans-serif;
-      color: #1f2937;
-      background: #eef2f7;
+      color: var(--ink);
+      background: var(--bg);
     }
-    header {
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
       min-height: 64px;
-      background: #fff;
-      border-bottom: 1px solid #d5dce8;
-      padding: 14px 18px;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 16px;
     }
-    h1, h2, h3, p { margin: 0; }
-    h1 { font-size: 20px; }
-    h2 { font-size: 16px; margin-bottom: 12px; }
-    h3 { font-size: 14px; margin-bottom: 8px; }
-    .muted { color: #667085; font-size: 13px; margin-top: 3px; }
-    header .muted,
-    #roles .role-help + .muted {
-      display: none;
+
+    h1,
+    h2,
+    p {
+      margin: 0;
     }
-    .header-copy,
-    .role-help {
-      color: #667085;
+
+    h1 {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      color: var(--muted);
       font-size: 13px;
-      margin-top: 3px;
+      margin-top: 2px;
     }
+
     .status {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: #667085;
+      color: var(--muted);
       font-size: 13px;
       white-space: nowrap;
     }
+
     .dot {
       width: 9px;
       height: 9px;
       border-radius: 99px;
-      background: #16a34a;
+      background: var(--green);
     }
-    main {
+
+    .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(360px, .9fr);
-      gap: 16px;
-      padding: 16px;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      min-height: 0;
     }
-    .stack { display: grid; gap: 16px; align-content: start; }
-    .card {
-      background: #fff;
-      border: 1px solid #d5dce8;
+
+    .main {
+      min-width: 0;
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .side {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .search {
+      max-width: 360px;
+      flex: 1 1 220px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 14px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
     }
-    .role-card {
-      border-color: #a9c2f7;
-      box-shadow: 0 14px 32px rgba(37, 99, 235, .12);
+
+    .panel h2 {
+      font-size: 15px;
+      margin-bottom: 12px;
     }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: auto;
     }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-    label {
-      display: block;
-      margin: 0 0 6px;
-      font-weight: 700;
-      font-size: 13px;
-      color: #344054;
-    }
-    input, textarea {
-      width: 100%;
-      min-height: 38px;
-      border: 1px solid #b8c4d6;
-      border-radius: 6px;
-      padding: 9px 10px;
-      font: inherit;
-      background: #fff;
-    }
-    textarea {
-      min-height: 150px;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 12px;
-      resize: vertical;
-    }
-    .field { margin-bottom: 10px; }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-top: 6px;
-    }
-    button, .link-button {
-      min-height: 36px;
-      border: 1px solid #2563eb;
-      border-radius: 6px;
-      background: #2563eb;
-      color: #fff;
-      padding: 8px 12px;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    button.secondary, .link-button.secondary {
-      color: #1f2937;
-      background: #fff;
-      border-color: #b8c4d6;
-    }
-    button.green {
-      border-color: #16a34a;
-      background: #16a34a;
-    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 12px;
-      font-size: 13px;
+      min-width: 760px;
     }
-    th, td {
-      border-bottom: 1px solid #e5eaf2;
-      padding: 8px 4px;
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
       text-align: left;
       vertical-align: top;
+      font-size: 14px;
     }
-    th { color: #475467; font-size: 12px; }
-    tr[data-role-id] { cursor: pointer; }
-    tr[data-role-id]:hover { background: #f7faff; }
-    tr[data-role-id].selected {
-      background: #eef4ff;
-      box-shadow: inset 3px 0 0 #2563eb;
-    }
-    .edit-state {
-      display: inline-flex;
-      align-items: center;
-      min-height: 26px;
-      padding: 4px 9px;
-      border-radius: 6px;
-      background: #f0fdf4;
-      color: #166534;
+
+    th {
+      background: #f8fafc;
+      color: #344054;
       font-size: 12px;
-      font-weight: 700;
+      letter-spacing: 0;
     }
-    small { color: #667085; }
-    pre {
-      overflow: auto;
-      min-height: 340px;
-      max-height: calc(100vh - 160px);
-      margin: 0;
-      padding: 12px;
-      border-radius: 8px;
-      background: #101828;
-      color: #e5e7eb;
-      font-size: 12px;
-      line-height: 1.45;
-      white-space: pre-wrap;
+
+    tr:hover td {
+      background: #fbfdff;
     }
-    .pill {
+
+    tr.selected td {
+      background: var(--blue-soft);
+    }
+
+    .code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      color: #344054;
+    }
+
+    .badge {
       display: inline-flex;
       align-items: center;
       min-height: 24px;
       padding: 3px 8px;
       border-radius: 99px;
-      background: #eef4ff;
-      color: #1d4ed8;
       font-size: 12px;
       font-weight: 700;
+      background: #eaf7ee;
+      color: #166534;
     }
-    .step-grid {
+
+    .badge.draft {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .button {
+      min-height: 36px;
+      border: 1px solid #b8c4d6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 11px;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background: var(--blue-soft);
+      border-color: #9bb4e8;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .button.danger {
+      color: #fff;
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    .button.small {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .field {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 6px;
+      margin-bottom: 12px;
     }
-    @media (max-width: 980px) {
-      main, .grid-2, .grid-3, .step-grid {
+
+    label {
+      font-size: 13px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #b8c4d6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 9px 10px;
+      min-height: 38px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 84px;
+    }
+
+    .empty {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    .detail {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .detail strong {
+      color: var(--ink);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
         grid-template-columns: 1fr;
       }
-      header {
-        align-items: flex-start;
+
+      .side {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar,
+      .toolbar {
+        align-items: stretch;
         flex-direction: column;
       }
-      pre { max-height: none; }
+
+      .status {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>EIS-SIGN Console</h1>
-      <p class="header-copy">หน้ารวมสำหรับ Add Roles, Template, Request, PDF Sign และ Database</p>
-      <p class="muted">หน้ารวมสำหรับ Add Roles, Template, Request, PDF Sign และ Database</p>
-    </div>
-    <div class="status"><span class="dot"></span><span id="health">Checking API</span></div>
-  </header>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>E-Signature Console</h1>
+        <p class="subtitle">เพิ่ม ลบ แก้ไข Sign Template สำหรับ Spring Boot / PDFBox / WorkflowEngine</p>
+      </div>
+      <div class="status"><span class="dot"></span><span id="statusText">Ready</span><button class="button small" id="logoutButton" type="button">Logout</button></div>
+    </header>
 
-  <main>
-    <div class="stack">
-      <section class="card role-card" id="roles">
-        <div class="actions" style="justify-content: space-between; margin-top: 0">
-          <div>
-            <h2>Add Roles</h2>
-            <p class="role-help">บันทึก Role ลงฐาน EIS_ERP จริง และคลิกแถวในตารางเพื่อแก้ไข Role เดิม</p>
-            <p class="muted">บันทึก role ลงฐาน EIS_ERP จริง และคลิกแถวเพื่อแก้ไข role เดิม</p>
-          </div>
-          <span class="pill" id="roleCount">0 roles</span>
-        </div>
-
-        <div class="grid-2" style="margin-top: 12px">
-          <div class="field">
-            <label for="roleIdInput">Role ID</label>
-            <input id="roleIdInput" value="role-requester">
-          </div>
-          <div class="field">
-            <label for="roleNameInput">Role Name</label>
-            <input id="roleNameInput" value="Requester">
-          </div>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label for="roleEmailInput">Default Email</label>
-            <input id="roleEmailInput" value="requester@company.com">
-          </div>
-          <div class="field">
-            <label for="roleOrderInput">Signing Order</label>
-            <input id="roleOrderInput" type="number" min="1" value="1">
-          </div>
-        </div>
-        <div class="actions">
-          <button class="green" id="saveRole">Add / Save Role</button>
-          <button class="secondary" id="newRole">New</button>
-          <button class="secondary" id="listRoles">Refresh Roles</button>
-          <span class="edit-state" id="roleEditState">New role</span>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Role</th>
-              <th>Email</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="rolesTable">
-            <tr><td colspan="4">No roles loaded.</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section class="step-grid">
-        <div class="card">
-          <h2>Database</h2>
-          <p class="muted">ตรวจ connection และสร้างตารางที่จำเป็น</p>
+    <section class="layout">
+      <section class="main">
+        <div class="toolbar">
+          <input class="search" id="searchInput" type="search" placeholder="ค้นหา template, workflow, role">
           <div class="actions">
-            <button id="dbHealth">DB Health</button>
-            <button class="secondary" id="dbInit">Create Tables</button>
+            <button class="button" id="resetDemo" type="button">Reset Demo</button>
+            <button class="button primary" id="newTemplate" type="button">Add Template</button>
           </div>
         </div>
 
-        <div class="card">
-          <h2>Scan PDF</h2>
-          <div class="field">
-            <label for="scanPdf">PDF</label>
-            <input id="scanPdf" type="file" accept="application/pdf">
-          </div>
-          <button id="scanBtn">Scan PDF Pages</button>
+        <div class="table-wrap">
+          <table aria-label="Sign templates">
+            <thead>
+              <tr>
+                <th>Template</th>
+                <th>Sign Group</th>
+                <th>Workflow</th>
+                <th>Roles</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="templateRows"></tbody>
+          </table>
         </div>
+        <div class="empty" id="emptyState" hidden>ไม่พบข้อมูล Template</div>
       </section>
 
-      <section class="card">
-        <h2>Save Template</h2>
-        <div class="field">
-          <label for="templatePdf">Sample PDF</label>
-          <input id="templatePdf" type="file" accept="application/pdf">
-        </div>
-        <div class="field">
-          <label for="templateJson">Template JSON</label>
-          <textarea id="templateJson"></textarea>
-        </div>
-        <button id="saveTemplate">Save Template</button>
-      </section>
-
-      <section class="grid-2">
-        <div class="card">
-          <h2>Create Request</h2>
-          <div class="field">
-            <label for="requestJson">Request JSON</label>
-            <textarea id="requestJson"></textarea>
-          </div>
-          <button id="createRequest">Create Signing Request</button>
-        </div>
-
-        <div class="card">
-          <h2>Sign PDF</h2>
-          <div class="field">
-            <label for="requestId">Request ID</label>
-            <input id="requestId">
-          </div>
-          <div class="field">
-            <label for="documentPdf">Document PDF</label>
-            <input id="documentPdf" type="file" accept="application/pdf">
-          </div>
-          <div class="grid-2">
+      <aside class="side">
+        <section class="panel">
+          <h2 id="formTitle">Add Template</h2>
+          <form id="templateForm">
+            <input id="templateId" type="hidden">
             <div class="field">
-              <label for="signerName">Signer Name</label>
-              <input id="signerName" value="Demo Requester">
+              <label for="templateCode">Template Code</label>
+              <input id="templateCode" required placeholder="PO-APPROVAL-001">
             </div>
             <div class="field">
-              <label for="roleName">Role Name</label>
-              <input id="roleName" value="Requester">
+              <label for="templateName">Template Name</label>
+              <input id="templateName" required placeholder="Purchase Approval">
             </div>
-          </div>
-          <div class="actions">
-            <button id="signPdf">Sign and Stamp PDF</button>
-            <button class="secondary" id="downloadPdf">Download PDF</button>
-          </div>
-        </div>
-      </section>
-    </div>
+            <div class="field">
+              <label for="signGroup">Sign Group</label>
+              <input id="signGroup" required placeholder="Procurement">
+            </div>
+            <div class="field">
+              <label for="workflowName">WorkflowEngine Process</label>
+              <input id="workflowName" required placeholder="WF_PO_APPROVAL">
+            </div>
+            <div class="field">
+              <label for="roles">Roles</label>
+              <input id="roles" required placeholder="Requester, Finance, Director">
+            </div>
+            <div class="field">
+              <label for="status">Status</label>
+              <select id="status">
+                <option value="Active">Active</option>
+                <option value="Draft">Draft</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="callbackUrl">ExtJS/PHP Callback URL</label>
+              <input id="callbackUrl" placeholder="/legacy/esign/callback.php">
+            </div>
+            <div class="field">
+              <label for="notes">Notes</label>
+              <textarea id="notes" placeholder="PDFBox field mapping, MSSQL table, or production note"></textarea>
+            </div>
+            <div class="actions">
+              <button class="button primary" type="submit">Save</button>
+              <button class="button" id="cancelEdit" type="button">Cancel</button>
+            </div>
+          </form>
+        </section>
 
-    <aside class="stack">
-      <section class="card">
-        <h2>API Result</h2>
-        <pre id="output"></pre>
-      </section>
-      <section class="card">
-        <h2>Quick Links</h2>
-        <div class="actions">
-          <a class="link-button secondary" href="../">หน้าแรก</a>
-          <a class="link-button secondary" href="../pdf-signature-preview.html">Template Builder</a>
-          <a class="link-button secondary" href="../api/esign/health">API Health</a>
-        </div>
-      </section>
-    </aside>
+        <section class="panel" style="margin-top: 14px">
+          <h2>Selected Detail</h2>
+          <div class="detail" id="detailView">เลือก template จากตารางเพื่อดูรายละเอียด</div>
+        </section>
+      </aside>
+    </section>
   </main>
 
   <script>
-    const output = document.querySelector("#output");
-    const health = document.querySelector("#health");
-    const templateJson = document.querySelector("#templateJson");
-    const requestJson = document.querySelector("#requestJson");
-    const requestId = document.querySelector("#requestId");
-    const rolesTable = document.querySelector("#rolesTable");
-    const roleCount = document.querySelector("#roleCount");
-    const roleEditState = document.querySelector("#roleEditState");
-    let selectedRoleId = "";
+    const storageKey = "esign-console-templates";
+    const demoTemplates = [
+      {
+        id: "tpl-po",
+        code: "PO-APPROVAL-001",
+        name: "Purchase Approval",
+        signGroup: "Procurement",
+        workflow: "WF_PO_APPROVAL",
+        roles: "Requester, Finance, Director",
+        status: "Active",
+        callbackUrl: "/legacy/esign/callback.php",
+        notes: "PDFBox signs visible fields. Store template in MSSQL esign_template."
+      },
+      {
+        id: "tpl-hr",
+        code: "HR-CONTRACT-001",
+        name: "Employee Contract",
+        signGroup: "Human Resource",
+        workflow: "WF_HR_CONTRACT",
+        roles: "HR, Employee, Director",
+        status: "Draft",
+        callbackUrl: "/legacy/hr/esign_callback.php",
+        notes: "Waiting for production certificate mapping."
+      }
+    ];
 
-    const sampleTemplate = {
-      signGroup: { name: "Purchase Approval", templateCode: "PO-APPROVAL-001" },
-      samplePdf: { fileName: "sample.pdf", pageCount: 1 },
-      roles: [
-        { id: "role-requester", name: "Requester", defaultEmail: "requester@company.com", signingOrder: 1 },
-        { id: "role-finance", name: "Finance", defaultEmail: "finance@company.com", signingOrder: 2 },
-        { id: "role-director", name: "Director", defaultEmail: "director@company.com", signingOrder: 3 }
-      ],
-      signatureFields: [
-        { id: "sig-requester-1", roleId: "role-requester", roleName: "Requester", page: 1, xRatio: 0.34, yRatio: 0.58, widthRatio: 0.31, heightRatio: 0.085, pdfBoxAnchor: "top-left" }
-      ],
-      workflow: { engineProcess: "WF_PO_APPROVAL", legacyCallbackUrl: "/legacy/esign/callback.php", mssqlTable: "esign_template" }
+    const els = {
+      rows: document.querySelector("#templateRows"),
+      empty: document.querySelector("#emptyState"),
+      search: document.querySelector("#searchInput"),
+      form: document.querySelector("#templateForm"),
+      formTitle: document.querySelector("#formTitle"),
+      templateId: document.querySelector("#templateId"),
+      templateCode: document.querySelector("#templateCode"),
+      templateName: document.querySelector("#templateName"),
+      signGroup: document.querySelector("#signGroup"),
+      workflowName: document.querySelector("#workflowName"),
+      roles: document.querySelector("#roles"),
+      status: document.querySelector("#status"),
+      callbackUrl: document.querySelector("#callbackUrl"),
+      notes: document.querySelector("#notes"),
+      newTemplate: document.querySelector("#newTemplate"),
+      cancelEdit: document.querySelector("#cancelEdit"),
+      resetDemo: document.querySelector("#resetDemo"),
+      detail: document.querySelector("#detailView"),
+      statusText: document.querySelector("#statusText")
     };
 
-    templateJson.value = JSON.stringify(sampleTemplate, null, 2);
-    requestJson.value = JSON.stringify({
-      templateCode: "PO-APPROVAL-001",
-      documentNo: "PO-2026-0001",
-      createdBy: "extjs-demo",
-      signerEmails: { Requester: "requester@company.com" },
-      legacyPayload: { sourceSystem: "ExtJS/PHP", callbackRef: "PO-2026-0001" }
-    }, null, 2);
+    const authSession =
+      JSON.parse(sessionStorage.getItem("eis-auth-session") || localStorage.getItem("eis-auth-session") || "null");
 
-    function show(value) {
-      output.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+    if (authSession?.full_name || authSession?.username) {
+      els.statusText.textContent = `Login: ${authSession.full_name || authSession.username}`;
     }
 
-    async function readJson(response) {
-      const text = await response.text();
-      try { return JSON.parse(text); } catch (error) { return text; }
+    let templates = loadTemplates();
+    let selectedId = templates[0]?.id || "";
+
+    function loadTemplates() {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return [...demoTemplates];
+
+      try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [...demoTemplates];
+      } catch {
+        return [...demoTemplates];
+      }
     }
 
-    function fillRole(role) {
-      document.querySelector("#roleIdInput").value = role.id || "";
-      document.querySelector("#roleNameInput").value = role.name || "";
-      document.querySelector("#roleEmailInput").value = role.defaultEmail || "";
-      document.querySelector("#roleOrderInput").value = role.signingOrder || 1;
-      document.querySelector("#roleName").value = role.name || "";
-      document.querySelector("#signerName").value = role.name || "";
-      selectedRoleId = role.id || "";
-      roleEditState.textContent = selectedRoleId ? `Editing ${selectedRoleId}` : "New role";
-      rolesTable.querySelectorAll("[data-role-id]").forEach((row) => {
-        row.classList.toggle("selected", row.dataset.roleId === selectedRoleId);
-      });
+    function saveTemplates() {
+      localStorage.setItem(storageKey, JSON.stringify(templates));
+    }
+
+    function setStatus(text) {
+      els.statusText.textContent = text;
+    }
+
+    function filteredTemplates() {
+      const query = els.search.value.trim().toLowerCase();
+      if (!query) return templates;
+
+      return templates.filter((item) => [
+        item.code,
+        item.name,
+        item.signGroup,
+        item.workflow,
+        item.roles,
+        item.status
+      ].join(" ").toLowerCase().includes(query));
     }
 
     function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
     }
 
-    async function checkHealth() {
-      const data = await readJson(await fetch("../api/esign/health"));
-      health.textContent = data.success ? "API ready" : "API unavailable";
-      show(data);
+    function renderRows() {
+      const rows = filteredTemplates();
+      els.empty.hidden = rows.length > 0;
+      els.rows.innerHTML = rows.map((item) => `
+        <tr class="${item.id === selectedId ? "selected" : ""}" data-id="${item.id}">
+          <td>
+            <strong>${escapeHtml(item.name)}</strong>
+            <div class="code">${escapeHtml(item.code)}</div>
+          </td>
+          <td>${escapeHtml(item.signGroup)}</td>
+          <td class="code">${escapeHtml(item.workflow)}</td>
+          <td>${escapeHtml(item.roles)}</td>
+          <td><span class="badge ${item.status === "Draft" ? "draft" : ""}">${escapeHtml(item.status)}</span></td>
+          <td>
+            <div class="actions">
+              <button class="button small" type="button" data-action="edit" data-id="${item.id}">Edit</button>
+              <button class="button small danger" type="button" data-action="delete" data-id="${item.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
     }
 
-    async function loadRoles() {
-      const data = await readJson(await fetch("../api/esign/roles"));
-      if (!data.success) {
-        show(data);
+    function renderDetail() {
+      const item = templates.find((template) => template.id === selectedId);
+      if (!item) {
+        els.detail.textContent = "เลือก template จากตารางเพื่อดูรายละเอียด";
         return;
       }
-      roleCount.textContent = `${data.roles.length} role${data.roles.length === 1 ? "" : "s"}`;
-      rolesTable.innerHTML = data.roles.length
-        ? data.roles.map((role) => `
-            <tr data-role-id="${escapeHtml(role.id)}" class="${role.id === selectedRoleId ? "selected" : ""}">
-              <td>${escapeHtml(role.signingOrder)}</td>
-              <td><strong>${escapeHtml(role.name)}</strong><br><small>${escapeHtml(role.id)}</small></td>
-              <td>${escapeHtml(role.defaultEmail || "")}</td>
-              <td>${role.active ? "Active" : "Inactive"}</td>
-            </tr>
-          `).join("")
-        : `<tr><td colspan="4">No roles saved.</td></tr>`;
 
-      rolesTable.querySelectorAll("[data-role-id]").forEach((row) => {
-        row.addEventListener("click", () => {
-          const role = data.roles.find((item) => item.id === row.dataset.roleId);
-          if (role) fillRole(role);
-        });
-      });
-      show(data);
+      els.detail.innerHTML = `
+        <div><strong>Template:</strong> ${escapeHtml(item.name)} <span class="code">${escapeHtml(item.code)}</span></div>
+        <div><strong>Sign Group:</strong> ${escapeHtml(item.signGroup)}</div>
+        <div><strong>Workflow:</strong> ${escapeHtml(item.workflow)}</div>
+        <div><strong>Roles:</strong> ${escapeHtml(item.roles)}</div>
+        <div><strong>Callback:</strong> <span class="code">${escapeHtml(item.callbackUrl || "-")}</span></div>
+        <div><strong>Notes:</strong> ${escapeHtml(item.notes || "-")}</div>
+      `;
     }
 
-    document.querySelector("#newRole").addEventListener("click", () => {
-      fillRole({ id: "", name: "", defaultEmail: "", signingOrder: 1 });
-      document.querySelector("#roleNameInput").focus();
-    });
+    function render() {
+      renderRows();
+      renderDetail();
+    }
 
-    document.querySelector("#saveRole").addEventListener("click", async () => {
-      const role = {
-        id: document.querySelector("#roleIdInput").value.trim(),
-        name: document.querySelector("#roleNameInput").value.trim(),
-        defaultEmail: document.querySelector("#roleEmailInput").value.trim(),
-        signingOrder: Number(document.querySelector("#roleOrderInput").value || 1),
-        active: true
+    function clearForm() {
+      els.formTitle.textContent = "Add Template";
+      els.templateId.value = "";
+      els.templateCode.value = "";
+      els.templateName.value = "";
+      els.signGroup.value = "";
+      els.workflowName.value = "";
+      els.roles.value = "";
+      els.status.value = "Active";
+      els.callbackUrl.value = "/legacy/esign/callback.php";
+      els.notes.value = "";
+      els.templateCode.focus();
+    }
+
+    function editTemplate(id) {
+      const item = templates.find((template) => template.id === id);
+      if (!item) return;
+
+      selectedId = id;
+      els.formTitle.textContent = "Edit Template";
+      els.templateId.value = item.id;
+      els.templateCode.value = item.code;
+      els.templateName.value = item.name;
+      els.signGroup.value = item.signGroup;
+      els.workflowName.value = item.workflow;
+      els.roles.value = item.roles;
+      els.status.value = item.status;
+      els.callbackUrl.value = item.callbackUrl || "";
+      els.notes.value = item.notes || "";
+      setStatus(`Editing ${item.code}`);
+      render();
+    }
+
+    function deleteTemplate(id) {
+      const item = templates.find((template) => template.id === id);
+      if (!item) return;
+
+      const ok = confirm(`Delete template ${item.code}?`);
+      if (!ok) return;
+
+      templates = templates.filter((template) => template.id !== id);
+      if (selectedId === id) selectedId = templates[0]?.id || "";
+      saveTemplates();
+      clearForm();
+      setStatus(`Deleted ${item.code}`);
+      render();
+    }
+
+    function upsertTemplate(event) {
+      event.preventDefault();
+      const id = els.templateId.value || crypto.randomUUID();
+      const item = {
+        id,
+        code: els.templateCode.value.trim(),
+        name: els.templateName.value.trim(),
+        signGroup: els.signGroup.value.trim(),
+        workflow: els.workflowName.value.trim(),
+        roles: els.roles.value.trim(),
+        status: els.status.value,
+        callbackUrl: els.callbackUrl.value.trim(),
+        notes: els.notes.value.trim()
       };
-      const data = await readJson(await fetch("../api/esign/roles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(role)
-      }));
-      if (data.success) {
-        selectedRoleId = data.role?.id || role.id;
-        show({ ...data, savedToDatabase: true, database: "EIS_ERP" });
-        await loadRoles();
-        fillRole(data.role || role);
+
+      const duplicate = templates.some((template) => template.code === item.code && template.id !== id);
+      if (duplicate) {
+        setStatus("Template Code ซ้ำ");
+        els.templateCode.focus();
         return;
       }
-      show(data);
-    });
 
-    document.querySelector("#listRoles").addEventListener("click", loadRoles);
-
-    document.querySelector("#dbHealth").addEventListener("click", async () => {
-      show(await readJson(await fetch("../api/esign/db/health")));
-    });
-
-    document.querySelector("#dbInit").addEventListener("click", async () => {
-      show(await readJson(await fetch("../api/esign/db/init", { method: "POST" })));
-      await loadRoles();
-    });
-
-    document.querySelector("#scanBtn").addEventListener("click", async () => {
-      const file = document.querySelector("#scanPdf").files[0];
-      if (!file) return show("Choose a PDF first.");
-      const form = new FormData();
-      form.append("pdf", file);
-      show(await readJson(await fetch("../api/esign/scan", { method: "POST", body: form })));
-    });
-
-    document.querySelector("#saveTemplate").addEventListener("click", async () => {
-      const form = new FormData();
-      form.append("templateJson", new Blob([templateJson.value], { type: "application/json" }));
-      const file = document.querySelector("#templatePdf").files[0];
-      if (file) form.append("samplePdf", file);
-      show(await readJson(await fetch("../api/esign/templates", { method: "POST", body: form })));
-    });
-
-    document.querySelector("#createRequest").addEventListener("click", async () => {
-      const response = await fetch("../api/esign/requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestJson.value
-      });
-      const data = await readJson(response);
-      if (data.requestId) requestId.value = data.requestId;
-      show(data);
-    });
-
-    async function sign(acceptPdf) {
-      if (!requestId.value.trim()) return show("Create a request first.");
-      const form = new FormData();
-      const file = document.querySelector("#documentPdf").files[0];
-      if (file) form.append("documentPdf", file);
-      form.append("signerName", document.querySelector("#signerName").value);
-      form.append("roleName", document.querySelector("#roleName").value);
-      const response = await fetch(`../api/esign/requests/${encodeURIComponent(requestId.value.trim())}/sign`, {
-        method: "POST",
-        headers: acceptPdf ? { "Accept": "application/pdf" } : {},
-        body: form
-      });
-      if (!acceptPdf) {
-        show(await readJson(response));
-        return;
+      const index = templates.findIndex((template) => template.id === id);
+      if (index >= 0) {
+        templates[index] = item;
+        setStatus(`Updated ${item.code}`);
+      } else {
+        templates.unshift(item);
+        setStatus(`Added ${item.code}`);
       }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "signed.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
-      show("Signed PDF downloaded.");
+
+      selectedId = id;
+      saveTemplates();
+      clearForm();
+      render();
     }
 
-    document.querySelector("#signPdf").addEventListener("click", () => sign(false));
-    document.querySelector("#downloadPdf").addEventListener("click", () => sign(true));
+    els.rows.addEventListener("click", (event) => {
+      const action = event.target.dataset.action;
+      const row = event.target.closest("tr[data-id]");
+      if (!row) return;
 
-    checkHealth().then(loadRoles).catch((error) => {
-      health.textContent = "API unavailable";
-      show(error.message);
+      if (action === "edit") {
+        editTemplate(event.target.dataset.id);
+        return;
+      }
+
+      if (action === "delete") {
+        deleteTemplate(event.target.dataset.id);
+        return;
+      }
+
+      selectedId = row.dataset.id;
+      render();
     });
+
+    els.form.addEventListener("submit", upsertTemplate);
+    els.search.addEventListener("input", renderRows);
+    els.newTemplate.addEventListener("click", clearForm);
+    els.cancelEdit.addEventListener("click", () => {
+      clearForm();
+      setStatus("Ready");
+    });
+    els.resetDemo.addEventListener("click", () => {
+      templates = [...demoTemplates];
+      selectedId = templates[0].id;
+      saveTemplates();
+      clearForm();
+      setStatus("Demo data restored");
+      render();
+    });
+    document.querySelector("#logoutButton").addEventListener("click", () => {
+      sessionStorage.removeItem("eis-auth-session");
+      localStorage.removeItem("eis-auth-session");
+      location.href = "login.html";
+    });
+
+    render();
   </script>
 </body>
 </html>

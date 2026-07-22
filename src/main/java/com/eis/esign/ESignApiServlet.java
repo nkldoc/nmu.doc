@@ -2,6 +2,7 @@ package com.eis.esign;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import javax.servlet.ServletException;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@WebServlet(urlPatterns = {"docs/api/esign/*"})
+@WebServlet(urlPatterns = {"api/esign/*"})
 @MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 60 * 1024 * 1024)
 public class ESignApiServlet extends HttpServlet {
 
@@ -87,8 +88,10 @@ public class ESignApiServlet extends HttpServlet {
                 "POST /api/esign/db/init",
                 "GET /api/esign/roles",
                 "POST /api/esign/roles",
+                "GET /api/esign/templates",
                 "POST /api/esign/templates",
                 "GET /api/esign/templates/{templateCode}",
+                "DELETE /api/esign/templates/{templateCode}",
                 "POST /api/esign/requests",
                 "POST /api/esign/requests/{requestId}/sign"
             });
@@ -103,6 +106,11 @@ public class ESignApiServlet extends HttpServlet {
 
         if ("/roles".equals(path)) {
             listRoles(resp);
+            return;
+        }
+
+        if ("/templates".equals(path)) {
+            listTemplates(resp);
             return;
         }
 
@@ -128,6 +136,19 @@ public class ESignApiServlet extends HttpServlet {
             }
             resp.setContentType("application/json; charset=UTF-8");
             Files.copy(json.toPath(), resp.getOutputStream());
+            return;
+        }
+
+        writeError(resp, 404, "Unknown API path: " + path);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        addCors(resp);
+        String path = normalizePath(req);
+
+        if (path.startsWith("/templates/")) {
+            deleteTemplate(path, resp);
             return;
         }
 
@@ -195,7 +216,13 @@ public class ESignApiServlet extends HttpServlet {
             return;
         }
 
-        ESignTemplate template = GSON.fromJson(rawTemplate, ESignTemplate.class);
+        ESignTemplate template;
+        try {
+            template = GSON.fromJson(rawTemplate, ESignTemplate.class);
+        } catch (JsonSyntaxException e) {
+            writeError(resp, 400, "Invalid templateJson: " + e.getMessage());
+            return;
+        }
         if (template == null || template.signGroup == null || isBlank(template.signGroup.templateCode)) {
             writeError(resp, 400, "templateJson.signGroup.templateCode is required");
             return;
@@ -433,6 +460,44 @@ public class ESignApiServlet extends HttpServlet {
         }
     }
 
+    private void listTemplates(HttpServletResponse resp) throws IOException {
+        if (database == null) {
+            writeError(resp, 500, "Database is not configured: " + databaseInitError);
+            return;
+        }
+
+        try {
+            Map<String, Object> result = ok();
+            result.put("templates", database.listTemplates());
+            writeJson(resp, 200, result);
+        } catch (SQLException e) {
+            writeError(resp, 500, "Template list failed: " + e.getMessage());
+        }
+    }
+
+    private void deleteTemplate(String path, HttpServletResponse resp) throws IOException {
+        if (database == null) {
+            writeError(resp, 500, "Database is not configured: " + databaseInitError);
+            return;
+        }
+
+        String templateCode = safeName(path.substring("/templates/".length()));
+        try {
+            boolean deleted = database.deleteTemplate(templateCode);
+            if (!deleted) {
+                writeError(resp, 404, "Template not found: " + templateCode);
+                return;
+            }
+
+            Map<String, Object> result = ok();
+            result.put("templateCode", templateCode);
+            result.put("deleted", true);
+            writeJson(resp, 200, result);
+        } catch (SQLException e) {
+            writeError(resp, 500, "Template delete failed: " + e.getMessage());
+        }
+    }
+
     private void saveRole(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         if (database == null) {
             writeError(resp, 500, "Database is not configured: " + databaseInitError);
@@ -559,7 +624,7 @@ public class ESignApiServlet extends HttpServlet {
 
     private void addCors(HttpServletResponse resp) {
         resp.setHeader("Access-Control-Allow-Origin", "*");
-        resp.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        resp.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
         resp.setHeader("Access-Control-Allow-Headers", "Content-Type,Accept");
     }
 }

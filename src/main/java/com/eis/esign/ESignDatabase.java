@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ESignDatabase {
     private final DatabaseConfig config;
@@ -207,6 +209,51 @@ public class ESignDatabase {
             ps.setString(1, templateCode);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
+    public List<Map<String, Object>> listTemplates() throws SQLException {
+        List<Map<String, Object>> templates = new ArrayList<>();
+        String sql =
+                "SELECT template_code, sign_group_name, sample_pdf_name, page_count, workflow_process, legacy_callback_url, active_flag, updated_at " +
+                "FROM dbo.esign_template " +
+                "ORDER BY updated_at DESC, template_code";
+        try (Connection connection = config.openConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> template = new LinkedHashMap<>();
+                template.put("templateCode", rs.getString("template_code"));
+                template.put("signGroupName", rs.getString("sign_group_name"));
+                template.put("samplePdfName", rs.getString("sample_pdf_name"));
+                template.put("pageCount", rs.getInt("page_count"));
+                template.put("workflowProcess", rs.getString("workflow_process"));
+                template.put("legacyCallbackUrl", rs.getString("legacy_callback_url"));
+                template.put("active", rs.getBoolean("active_flag"));
+                template.put("updatedAt", rs.getString("updated_at"));
+                templates.add(template);
+            }
+        }
+        return templates;
+    }
+
+    public boolean deleteTemplate(String templateCode) throws SQLException {
+        try (Connection connection = config.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                deleteTemplateChildren(connection, templateCode);
+                int deleted;
+                try (PreparedStatement ps = connection.prepareStatement("DELETE FROM dbo.esign_template WHERE template_code=?")) {
+                    ps.setString(1, templateCode);
+                    deleted = ps.executeUpdate();
+                }
+                insertAudit(connection, null, "DELETE_TEMPLATE", null, null, "Template " + templateCode + " deleted");
+                connection.commit();
+                return deleted > 0;
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
             }
         }
     }

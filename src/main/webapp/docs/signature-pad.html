@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>เอกสารข้อตกลง — เซ็นและบันทึก</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+            :root{
+                --paper:#E9EBE3;
+                --paper-2:#F4F5EF;
+                --ink:#1B2A3D;
+                --ink-soft:#3B4A5C;
+                --rule:#B9B2A0;
+                --seal:#A23B2E;
+                --seal-dark:#7E2E24;
+                --stamp-green:#2F5233;
+                --muted:#6B6558;
+            }
+            *{
+                box-sizing:border-box;
+            }
+            html,body{
+                margin:0;
+                padding:0;
+            }
+            body{
+                background:
+                    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(107,101,88,0.05) 28px),
+                    var(--paper);
+                min-height:100vh;
+                font-family:'IBM Plex Sans', sans-serif;
+                color:var(--ink);
+                display:flex;
+                justify-content:center;
+                padding:40px 16px 60px;
+            }
+            .sheet{
+                width:100%;
+                max-width:640px;
+                background:var(--paper-2);
+                border:1px solid var(--rule);
+                box-shadow: 0 1px 0 rgba(27,42,61,0.04), 0 12px 30px -18px rgba(27,42,61,0.35);
+                position:relative;
+            }
+            .sheet::before{
+                content:"";
+                position:absolute;
+                inset:10px;
+                border:1px solid rgba(107,101,88,0.28);
+                pointer-events:none;
+            }
+            .letterhead{
+                padding:36px 40px 20px;
+                border-bottom:1px solid var(--rule);
+            }
+            .eyebrow{
+                font-family:'IBM Plex Mono', monospace;
+                font-size:11px;
+                letter-spacing:0.14em;
+                text-transform:uppercase;
+                color:var(--muted);
+                display:flex;
+                justify-content:space-between;
+            }
+            h1{
+                font-family:'Source Serif 4', serif;
+                font-weight:600;
+                font-size:30px;
+                margin:10px 0 6px;
+                letter-spacing:-0.01em;
+            }
+            .sub{
+                font-size:14px;
+                color:var(--ink-soft);
+                margin:0;
+            }
+            .fields{
+                padding:26px 40px 6px;
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:18px 24px;
+            }
+            .field{
+                grid-column: span 1;
+            }
+            .field.wide{
+                grid-column: 1 / -1;
+            }
+            label{
+                display:block;
+                font-family:'IBM Plex Mono', monospace;
+                font-size:10.5px;
+                letter-spacing:0.1em;
+                text-transform:uppercase;
+                color:var(--muted);
+                margin-bottom:6px;
+            }
+            input[type=text]{
+                width:100%;
+                border:none;
+                border-bottom:1px solid var(--rule);
+                background:transparent;
+                font-family:'Source Serif 4', serif;
+                font-size:17px;
+                color:var(--ink);
+                padding:2px 0 8px;
+                outline:none;
+                transition:border-color .15s ease;
+            }
+            input[type=text]:focus{
+                border-bottom-color:var(--seal);
+            }
+
+            .signblock{
+                padding:30px 40px 8px;
+            }
+            .pad-label-row{
+                display:flex;
+                align-items:baseline;
+                justify-content:space-between;
+                margin-bottom:10px;
+            }
+            .pad-label-row label{
+                margin-bottom:0;
+            }
+            .hint{
+                font-size:12px;
+                color:var(--muted);
+                font-style:italic;
+            }
+            .pad-wrap{
+                position:relative;
+                border:1.5px dashed var(--rule);
+                background:
+                    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(107,101,88,0.06) 40px),
+                    #fdfdfb;
+            }
+            canvas{
+                display:block;
+                width:100%;
+                height:200px;
+                touch-action:none;
+                cursor:crosshair;
+            }
+            .pad-baseline{
+                position:absolute;
+                left:24px;
+                right:24px;
+                bottom:34px;
+                height:0;
+                border-top:1px solid rgba(107,101,88,0.4);
+                pointer-events:none;
+            }
+            .placeholder{
+                position:absolute;
+                left:24px;
+                bottom:38px;
+                font-family:'IBM Plex Mono', monospace;
+                font-size:11px;
+                letter-spacing:0.08em;
+                color:#B7B1A0;
+                pointer-events:none;
+                transition:opacity .15s ease;
+            }
+
+            .pen-sizes{
+                display:flex;
+                align-items:center;
+                gap:8px;
+                margin-right:6px;
+            }
+            .pen-sizes span.pen-label{
+                font-family:'IBM Plex Mono', monospace;
+                font-size:10.5px;
+                letter-spacing:0.08em;
+                text-transform:uppercase;
+                color:var(--muted);
+                margin-right:2px;
+            }
+            .pen-dot{
+                width:32px;
+                height:32px;
+                border:1px solid var(--rule);
+                background:var(--paper-2);
+                border-radius:2px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                cursor:pointer;
+                padding:0;
+            }
+            .pen-dot:hover{
+                background:#fff;
+            }
+            .pen-dot.active{
+                border-color:var(--seal);
+                background:#fff;
+                box-shadow:0 0 0 1px var(--seal);
+            }
+            .pen-dot .dotmark{
+                border-radius:50%;
+                background:var(--ink);
+            }
+            .pad-actions{
+                display:flex;
+                align-items:center;
+                gap:10px;
+                margin-top:14px;
+                flex-wrap:wrap;
+            }
+            button{
+                font-family:'IBM Plex Sans', sans-serif;
+                font-size:13px;
+                font-weight:500;
+                border-radius:2px;
+                padding:9px 16px;
+                cursor:pointer;
+                border:1px solid var(--rule);
+                background:var(--paper-2);
+                color:var(--ink);
+                transition:transform .12s ease, background .15s ease, box-shadow .15s ease;
+            }
+            button:hover{
+                background:#fff;
+            }
+            button:active{
+                transform:translateY(1px);
+            }
+            button.ghost{
+                background:transparent;
+            }
+            button.seal{
+                background:var(--seal);
+                border-color:var(--seal-dark);
+                color:#F7F1E6;
+                margin-left:auto;
+                position:relative;
+                overflow:hidden;
+            }
+            button.seal:hover{
+                background:var(--seal-dark);
+            }
+            button.seal:disabled{
+                background:#C9C2B2;
+                border-color:#C9C2B2;
+                color:#8A8371;
+                cursor:not-allowed;
+            }
+            #fileInput{
+                display:none;
+            }
+
+            .status{
+                padding:16px 40px 34px;
+                font-family:'IBM Plex Mono', monospace;
+                font-size:11.5px;
+                color:var(--muted);
+                display:flex;
+                align-items:center;
+                gap:8px;
+                min-height:20px;
+            }
+            .dot{
+                width:6px;
+                height:6px;
+                border-radius:50%;
+                background:var(--rule);
+                transition:background .2s ease;
+            }
+            .dot.ready{
+                background:var(--stamp-green);
+            }
+
+            @media (max-width:480px){
+                .fields{
+                    grid-template-columns:1fr;
+                }
+                .letterhead, .fields, .signblock{
+                    padding-left:24px;
+                    padding-right:24px;
+                }
+                .status{
+                    padding-left:24px;
+                    padding-right:24px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sheet">
+            <div class="letterhead">
+                <div class="eyebrow"><span>เอกสารข้อตกลง</span><span id="docDate"></span></div>
+                <h1>บันทึกลายเซ็น</h1>
+                <p class="sub">ตรวจสอบรายละเอียดด้านล่าง จากนั้นเซ็นชื่อในช่องเพื่อยืนยันข้อตกลง</p>
+            </div>
+
+            <div class="fields">
+                <div class="field">
+                    <label for="fName">ชื่อ</label>
+                    <input id="fName" type="text" value="Jane Doe">
+                </div>
+                <div class="field">
+                    <label for="fRole">ตำแหน่ง</label>
+                    <input id="fRole" type="text" value="Project Manager">
+                </div>
+                <div class="field wide">
+                    <label for="fOrg">องค์กร/หน่วยงาน</label>
+                    <input id="fOrg" type="text" value="Acme Corporation">
+                </div>
+            </div>
+
+            <div class="signblock">
+                <div class="pad-label-row">
+                    <label>ลายเซ็น</label>
+                    <span class="hint">ลากเซ็นด้วยเมาส์หรือปลายนิ้ว หรือแนบไฟล์ลายเซ็นที่บันทึกไว้</span>
+                </div>
+                <div class="pad-wrap">
+                    <canvas id="pad"></canvas>
+                    <div class="pad-baseline"></div>
+                    <div class="placeholder" id="placeholder">เซ็นเหนือเส้น</div>
+                </div>
+                <div class="pad-actions" style="margin-bottom:0;">
+                    <div class="pen-sizes">
+                        <span class="pen-label">หัวปากกา</span>
+                        <button type="button" class="pen-dot style-dot active" data-style="ballpoint" title="ปากกาลูกลื่น">
+                            <svg width="16" height="16" viewBox="0 0 16 16"><line x1="2" y1="14" x2="14" y2="2" stroke="#1B2A3D" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        </button>
+                        <button type="button" class="pen-dot style-dot" data-style="brush" title="พู่กัน">
+                            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 14 L14 2" stroke="#1B2A3D" stroke-width="4" stroke-linecap="round"/></svg>
+                        </button>
+                        <button type="button" class="pen-dot style-dot" data-style="fountain" title="ปากกาหมึกซึม">
+                            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 14 L14 2" stroke="#1B2A3D" stroke-width="2.6" stroke-linecap="round"/><path d="M2 14 L14 2" stroke="#1B2A3D" stroke-width="1" stroke-linecap="round" opacity="0.4" transform="translate(1,1)"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="pad-actions">
+                    <div class="pen-sizes">
+                        <span class="pen-label">ขนาดปากกา</span>
+                        <button type="button" class="pen-dot size-dot" data-size="1.2" title="บาง"><span class="dotmark" style="width:4px;height:4px;"></span></button>
+                        <button type="button" class="pen-dot size-dot active" data-size="2.2" title="ปานกลาง"><span class="dotmark" style="width:7px;height:7px;"></span></button>
+                        <button type="button" class="pen-dot size-dot" data-size="3.6" title="หนา"><span class="dotmark" style="width:11px;height:11px;"></span></button>
+                    </div>
+                    <button class="ghost" id="clearBtn">ล้าง</button>
+                    <button class="ghost" id="browseBtn">เลือกไฟล์…</button>
+                    <input type="file" id="fileInput" accept="image/png,image/jpeg">
+                    <button class="seal" id="saveBtn" disabled>บันทึกเป็น PNG</button>
+                </div>
+            </div>
+
+            <div class="status">
+                <span class="dot" id="statusDot"></span>
+                <span id="statusText">รอลายเซ็น</span>
+            </div>
+        </div>
+
+        <script>
+            const canvas = document.getElementById('pad');
+            const ctx = canvas.getContext('2d');
+            const placeholder = document.getElementById('placeholder');
+            const saveBtn = document.getElementById('saveBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const browseBtn = document.getElementById('browseBtn');
+            const fileInput = document.getElementById('fileInput');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            let hasContent = false;
+            let drawing = false;
+            let last = null;
+            let lastTime = 0;
+            let penBase = 2.2;
+            let penStyle = 'ballpoint';
+
+            const sizeButtons = document.querySelectorAll('.size-dot');
+            sizeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sizeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    penBase = parseFloat(btn.dataset.size);
+                });
+            });
+
+            const styleButtons = document.querySelectorAll('.style-dot');
+            styleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    styleButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    penStyle = btn.dataset.style;
+                });
+            });
+
+            function resizeCanvas() {
+                const rect = canvas.getBoundingClientRect();
+                const ratio = window.devicePixelRatio || 1;
+                const prev = hasContent ? canvas.toDataURL() : null;
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#1B2A3D';
+                if (prev) {
+                    const img = new Image();
+                    img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+                    img.src = prev;
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function setStatus(ready) {
+                hasContent = ready;
+                saveBtn.disabled = !ready;
+                statusDot.classList.toggle('ready', ready);
+                statusText.textContent = ready ? 'บันทึกลายเซ็นแล้ว — พร้อมบันทึกไฟล์' : 'รอลายเซ็น';
+                placeholder.style.opacity = ready ? '0' : '1';
+            }
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                if (e.touches && e.touches.length) {
+                    return {x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top};
+                }
+                return {x: e.clientX - rect.left, y: e.clientY - rect.top};
+            }
+
+            function startDraw(e) {
+                e.preventDefault();
+                drawing = true;
+                last = getPos(e);
+                lastTime = Date.now();
+            }
+            function moveDraw(e) {
+                if (!drawing)
+                    return;
+                e.preventDefault();
+                const pos = getPos(e);
+                const now = Date.now();
+                const dt = Math.max(now - lastTime, 1);
+                const dist = Math.hypot(pos.x - last.x, pos.y - last.y);
+                const speed = dist / dt;
+                ctx.beginPath();
+                ctx.moveTo(last.x, last.y);
+                ctx.lineTo(pos.x, pos.y);
+
+                if (penStyle === 'ballpoint') {
+                    ctx.globalAlpha = 1;
+                    ctx.lineWidth = Math.max(penBase * 0.75, penBase - speed * 1.2);
+                    ctx.stroke();
+                } else if (penStyle === 'brush') {
+                    ctx.globalAlpha = 0.92;
+                    ctx.lineWidth = Math.max(penBase * 0.6, penBase * 1.6 - speed * 7);
+                    ctx.stroke();
+                } else { // fountain
+                    ctx.globalAlpha = 1;
+                    ctx.lineWidth = Math.max(penBase * 0.5, penBase - speed * 4);
+                    ctx.stroke();
+                    // faint ink-flow shadow for a wet-nib look
+                    ctx.globalAlpha = 0.25;
+                    ctx.lineWidth = ctx.lineWidth * 1.8;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+                last = pos;
+                lastTime = now;
+                if (!hasContent)
+                    setStatus(true);
+            }
+            function endDraw() {
+                drawing = false;
+            }
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', moveDraw);
+            window.addEventListener('mouseup', endDraw);
+            canvas.addEventListener('touchstart', startDraw, {passive: false});
+            canvas.addEventListener('touchmove', moveDraw, {passive: false});
+            canvas.addEventListener('touchend', endDraw);
+
+            clearBtn.addEventListener('click', () => {
+                const rect = canvas.getBoundingClientRect();
+                ctx.clearRect(0, 0, rect.width, rect.height);
+                setStatus(false);
+            });
+
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files[0];
+                if (!file)
+                    return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const rect = canvas.getBoundingClientRect();
+                        ctx.clearRect(0, 0, rect.width, rect.height);
+                        // fit image within pad while preserving aspect ratio
+                        const scale = Math.min(rect.width / img.width, rect.height / img.height) * 0.9;
+                        const w = img.width * scale, h = img.height * scale;
+                        const x = (rect.width - w) / 2, y = (rect.height - h) / 2;
+                        ctx.drawImage(img, x, y, w, h);
+                        setStatus(true);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+                fileInput.value = '';
+            });
+
+            saveBtn.addEventListener('click', () => {
+                const name = document.getElementById('fName').value.trim() || 'signature';
+                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                const link = document.createElement('a');
+                link.download = `${slug || 'signature'}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                statusText.textContent = 'บันทึกไฟล์เรียบร้อยแล้ว';
+            });
+
+        // Today's date, formatted plainly (avoids locale calendar quirks)
+            const today = new Date();
+            const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            document.getElementById('docDate').textContent = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+        </script>
+    </body>
+</html>

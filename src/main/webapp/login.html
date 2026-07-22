@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="th">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>EIS ERP Login</title>
+        <style>
+            :root {
+                color-scheme: light;
+                --bg: #eef2f7;
+                --surface: #fff;
+                --ink: #1f2937;
+                --muted: #667085;
+                --line: #d5dce8;
+                --blue: #2563eb;
+                --blue-soft: #e8f0ff;
+                --green: #16a34a;
+                --red: #dc2626;
+                --amber: #d97706;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family: Arial, "Noto Sans Thai", sans-serif;
+                color: var(--ink);
+                background: var(--bg);
+                display: grid;
+                place-items: center;
+                padding: 20px;
+            }
+
+            button,
+            input {
+                font: inherit;
+            }
+
+            .shell {
+                width: min(960px, 100%);
+                min-height: 560px;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 380px;
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 18px 45px rgba(15, 23, 42, .12);
+            }
+
+            .info {
+                padding: 34px;
+                display: grid;
+                align-content: space-between;
+                gap: 28px;
+                background: #f8fafc;
+                border-right: 1px solid var(--line);
+            }
+
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .mark {
+                width: 38px;
+                height: 38px;
+                border-radius: 8px;
+                display: grid;
+                place-items: center;
+                color: #fff;
+                background: var(--blue);
+                font-weight: 700;
+            }
+
+            h1,
+            h2,
+            p {
+                margin: 0;
+            }
+
+            h1 {
+                font-size: 22px;
+                line-height: 1.25;
+            }
+
+            .subtitle {
+                color: var(--muted);
+                margin-top: 6px;
+                line-height: 1.5;
+                max-width: 520px;
+            }
+
+            .mapping {
+                display: grid;
+                gap: 10px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+
+            .mapping-row {
+                display: grid;
+                grid-template-columns: 150px 1fr;
+                gap: 10px;
+                padding: 10px 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .mapping-row strong {
+                color: var(--ink);
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 12px;
+            }
+
+            .login {
+                padding: 34px;
+                display: grid;
+                align-content: center;
+            }
+
+            .login h2 {
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+
+            .small {
+                color: var(--muted);
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            form {
+                margin-top: 22px;
+                display: grid;
+                gap: 14px;
+            }
+
+            .field {
+                display: grid;
+                gap: 6px;
+            }
+
+            label {
+                font-size: 13px;
+                color: #344054;
+                font-weight: 700;
+            }
+
+            input {
+                width: 100%;
+                min-height: 42px;
+                border: 1px solid #b8c4d6;
+                border-radius: 6px;
+                background: #fff;
+                color: var(--ink);
+                padding: 10px 11px;
+            }
+
+            input:focus {
+                outline: 3px solid rgba(37, 99, 235, .16);
+                border-color: var(--blue);
+            }
+
+            .row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .remember {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            .remember input {
+                width: 16px;
+                min-height: 16px;
+                accent-color: var(--blue);
+            }
+
+            .button {
+                min-height: 42px;
+                border: 1px solid var(--blue);
+                border-radius: 6px;
+                background: var(--blue);
+                color: #fff;
+                padding: 10px 14px;
+                cursor: pointer;
+                font-weight: 700;
+            }
+
+            .button:hover {
+                filter: brightness(.96);
+            }
+
+            .button.secondary {
+                color: var(--ink);
+                background: #fff;
+                border-color: #b8c4d6;
+                font-weight: 400;
+            }
+
+            .message {
+                min-height: 38px;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 9px 10px;
+                color: var(--muted);
+                background: #f8fafc;
+                font-size: 13px;
+                line-height: 1.35;
+            }
+
+            .message.ok {
+                color: #166534;
+                border-color: #bbf7d0;
+                background: #f0fdf4;
+            }
+
+            .message.error {
+                color: #991b1b;
+                border-color: #fecaca;
+                background: #fef2f2;
+            }
+
+            .message.warn {
+                color: #92400e;
+                border-color: #fed7aa;
+                background: #fff7ed;
+            }
+
+            .demo {
+                margin-top: 14px;
+                padding-top: 14px;
+                border-top: 1px solid var(--line);
+                display: grid;
+                gap: 8px;
+            }
+
+            .forgot {
+                border: 1px solid #fed7aa;
+                border-radius: 6px;
+                background: #fff7ed;
+                color: #92400e;
+                padding: 9px 10px;
+                font-size: 13px;
+                line-height: 1.45;
+                display: none;
+            }
+
+            .forgot.show {
+                display: block;
+            }
+
+            .code {
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 12px;
+                color: #344054;
+            }
+
+            @media (max-width: 760px) {
+                body {
+                    padding: 12px;
+                }
+
+                .shell {
+                    grid-template-columns: 1fr;
+                }
+
+                .info {
+                    border-right: 0;
+                    border-bottom: 1px solid var(--line);
+                    padding: 22px;
+                }
+
+                .login {
+                    padding: 22px;
+                }
+
+                .mapping-row {
+                    grid-template-columns: 1fr;
+                    gap: 3px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="shell">
+            <section class="info">
+                <div>
+                    <div class="brand">
+                        <div class="mark">EIS</div>
+                        <div>
+                            <h1>EIS ERP Login</h1>
+                            <p class="subtitle">เข้าสู่ระบบด้วยข้อมูลจากตาราง <span class="code">[EIS_ERP].[dbo].[users]</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mapping" aria-label="database mapping">
+                    <div class="mapping-row"><strong>username</strong><span>ใช้กรอก Username</span></div>
+                    <div class="mapping-row"><strong>email</strong><span>ใช้ login แทน Username ได้</span></div>
+                    <div class="mapping-row"><strong>password_hash</strong><span>ตรวจรหัสผ่านที่ backend เท่านั้น</span></div>
+                    <div class="mapping-row"><strong>active</strong><span>ต้องเป็น 1 ถึงเข้าใช้งานได้</span></div>
+                    <div class="mapping-row"><strong>locked</strong><span>ถ้าเป็น 1 จะถูกปฏิเสธ login</span></div>
+                    <div class="mapping-row"><strong>login_fail_count</strong><span>นับจำนวนครั้งที่ใส่รหัสผิด</span></div>
+                </div>
+            </section>
+
+            <section class="login">
+                <div>
+                    <h2>Sign in</h2>
+                    <p class="small">ระบบจริงควรส่ง username/password ไปที่ Spring Boot API แล้วให้ backend ตรวจ hash กับ MSSQL</p>
+                </div>
+
+                <form id="loginForm">
+                    <div class="field">
+                        <label for="loginName">Username หรือ Email</label>
+                        <input id="loginName" name="loginName" autocomplete="username" required placeholder="admin หรือ admin@company.com">
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="กรอกรหัสผ่าน">
+                    </div>
+
+                    <div class="row">
+                        <label class="remember">
+                            <input id="remember" type="checkbox">
+                            Remember me
+                        </label>
+                        <button class="button secondary" id="forgotPassword" type="button">จำรหัสไม่ได้</button>
+                    </div>
+
+                    <button class="button" type="submit">Login</button>
+                    <div class="message" id="message">Demo user: <span class="code">admin / Admin@1234</span></div>
+                    <div class="forgot" id="forgotBox">
+                        ไม่สามารถดูรหัสเดิมจากฐานข้อมูลได้ เพราะเก็บเป็น password_hash ให้ admin reset ด้วยไฟล์
+                        <span class="code">src/main/webapp/sql/reset_admin_password.sql</span>
+                    </div>
+                </form>
+
+                <div class="demo">
+                    <p class="small"><strong>API contract:</strong> <span class="code">POST /api/auth/login</span></p>
+                    <p class="small">Response ควรคืน token, user_id, username, full_name, active, locked</p>
+                </div>
+            </section>
+        </main>
+
+        <script>
+            const demoUsers = [
+                {
+                    user_id: 1,
+                    username: "admin",
+                    email: "admin@company.com",
+                    password: "Admin@1234",
+                    password_hash: "$2a$10$backend-check-only",
+                    full_name: "System Administrator",
+                    active: true,
+                    locked: false,
+                    login_fail_count: 0,
+                    created_date: "2026-07-08T00:00:00",
+                    updated_date: "2026-07-08T00:00:00"
+                },
+                {
+                    user_id: 2,
+                    username: "locked.user",
+                    email: "locked@company.com",
+                    password: "Password@123",
+                    password_hash: "$2a$10$backend-check-only",
+                    full_name: "Locked User",
+                    active: true,
+                    locked: true,
+                    login_fail_count: 5,
+                    created_date: "2026-07-08T00:00:00",
+                    updated_date: "2026-07-08T00:00:00"
+                },
+                {
+                    user_id: 3,
+                    username: "inactive.user",
+                    email: "inactive@company.com",
+                    password: "Password@123",
+                    password_hash: "$2a$10$backend-check-only",
+                    full_name: "Inactive User",
+                    active: false,
+                    locked: false,
+                    login_fail_count: 0,
+                    created_date: "2026-07-08T00:00:00",
+                    updated_date: "2026-07-08T00:00:00"
+                }
+            ];
+
+            const form = document.querySelector("#loginForm");
+            const loginName = document.querySelector("#loginName");
+            const password = document.querySelector("#password");
+            const remember = document.querySelector("#remember");
+            const forgotPassword = document.querySelector("#forgotPassword");
+            const forgotBox = document.querySelector("#forgotBox");
+            const message = document.querySelector("#message");
+
+            function setMessage(text, type = "") {
+                message.className = `message ${type}`.trim();
+                message.textContent = text;
+            }
+
+            function findUser(name) {
+                const key = name.trim().toLowerCase();
+                return demoUsers.find((user) =>
+                    user.username.toLowerCase() === key ||
+                            user.email.toLowerCase() === key
+                );
+            }
+
+            function saveSession(user) {
+                const session = {
+                    token: `demo-token-${crypto.randomUUID()}`,
+                    user_id: user.user_id,
+                    username: user.username,
+                    email: user.email,
+                    full_name: user.full_name,
+                    active: user.active,
+                    locked: user.locked,
+                    login_at: new Date().toISOString()
+                };
+
+                const storage = remember.checked ? localStorage : sessionStorage;
+                storage.setItem("eis-auth-session", JSON.stringify(session));
+                return session;
+            }
+
+            async function loginWithApi(payload) {
+                const endpoint = "/docs/api/auth/login";
+
+                if (location.protocol === "file:")
+                    return null;
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok)
+                        return null;
+                    return await response.json();
+                } catch {
+                    return null;
+                }
+            }
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const payload = {
+                    usernameOrEmail: loginName.value.trim(),
+                    password: password.value
+                };
+
+                const apiResult = await loginWithApi(payload);
+                if (apiResult?.token) {
+                    const storage = remember.checked ? localStorage : sessionStorage;
+                    storage.setItem("eis-auth-session", JSON.stringify(apiResult));
+                    setMessage(`Login success: ${apiResult.full_name || apiResult.username}`, "ok");
+                    setTimeout(() => {
+                        location.href = "console.html";
+                    }, 350);
+                    return;
+                }
+
+                if (location.protocol !== "file:") {
+                    setMessage("Login ไม่สำเร็จ กรุณาตรวจ username/password หรือสถานะผู้ใช้", "error");
+                    return;
+                }
+
+                const user = findUser(payload.usernameOrEmail);
+                if (!user) {
+                    setMessage("ไม่พบ username หรือ email นี้", "error");
+                    return;
+                }
+
+                if (!user.active) {
+                    setMessage("บัญชีนี้ถูกปิดใช้งาน active = 0", "warn");
+                    return;
+                }
+
+                if (user.locked) {
+                    setMessage("บัญชีนี้ถูกล็อก locked = 1", "warn");
+                    return;
+                }
+
+                if (payload.password !== user.password) {
+                    user.login_fail_count += 1;
+                    setMessage(`รหัสผ่านไม่ถูกต้อง login_fail_count = ${user.login_fail_count}`, "error");
+                    return;
+                }
+
+                const session = saveSession(user);
+                setMessage(`Login success: ${session.full_name}`, "ok");
+                setTimeout(() => {
+                    location.href = "console.html";
+                }, 350);
+            });
+
+            forgotPassword.addEventListener("click", () => {
+                forgotBox.classList.toggle("show");
+                setMessage("ให้ reset password ใหม่ ไม่ควรกู้หรือแสดงรหัสเดิม", "warn");
+            });
+        </script>
+    </body>
+</html>

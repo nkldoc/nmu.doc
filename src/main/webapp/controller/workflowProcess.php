@@ -8,12 +8,12 @@ $db = new DatabaseServer();
 $service = new WorkflowService($db);
 
 $result = $service->process(
-        $_REQUEST['module_code'],
-        $_REQUEST['table_name'],
-        $_REQUEST['document_no'],
-        $_REQUEST['current_status'],
-        $_REQUEST['action_code'],
-        $_REQUEST['from_role']
+        $_REQUEST['module_code'] ?? null,
+        $_REQUEST['table_name'] ?? null,
+        $_REQUEST['document_no'] ?? null,
+        $_REQUEST['current_status'] ?? null,
+        $_REQUEST['action_code'] ?? null,
+        $_REQUEST['from_role'] ?? null
 );
 
 echo json_encode($result);

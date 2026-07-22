@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="th">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>E-Sign Template Manager</title>
+        <style>
+            :root {
+                color-scheme: light;
+                --bg: #eef2f7;
+                --surface: #fff;
+                --panel: #f7f9fc;
+                --ink: #1f2937;
+                --muted: #667085;
+                --line: #d5dce8;
+                --blue: #2563eb;
+                --blue-soft: #e8f0ff;
+                --green: #16a34a;
+                --red: #dc2626;
+                --amber: #d97706;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family: Arial, "Noto Sans Thai", sans-serif;
+                color: var(--ink);
+                background: var(--bg);
+            }
+
+            button,
+            input,
+            select,
+            textarea {
+                font: inherit;
+            }
+
+            .app {
+                min-height: 100vh;
+                display: grid;
+                grid-template-rows: auto 1fr;
+            }
+
+            .topbar {
+                min-height: 64px;
+                padding: 12px 20px;
+                background: var(--surface);
+                border-bottom: 1px solid var(--line);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+
+            h1,
+            h2,
+            p {
+                margin: 0;
+            }
+
+            h1 {
+                font-size: 18px;
+                line-height: 1.25;
+            }
+
+            .subtitle {
+                color: var(--muted);
+                font-size: 13px;
+                margin-top: 2px;
+            }
+
+            .status {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 13px;
+                white-space: nowrap;
+            }
+
+            .dot {
+                width: 9px;
+                height: 9px;
+                border-radius: 99px;
+                background: var(--green);
+            }
+
+            .layout {
+                min-height: 0;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 420px;
+            }
+
+            .main {
+                min-width: 0;
+                overflow: auto;
+                padding: 18px;
+            }
+
+            .side {
+                min-height: 0;
+                overflow: auto;
+                padding: 18px;
+                background: var(--panel);
+                border-left: 1px solid var(--line);
+            }
+
+            .toolbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .toolbar input {
+                max-width: 420px;
+                flex: 1 1 260px;
+            }
+
+            .panel,
+            .table-wrap {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+            }
+
+            .panel {
+                padding: 14px;
+                margin-bottom: 14px;
+            }
+
+            .panel h2 {
+                font-size: 15px;
+                margin-bottom: 12px;
+            }
+
+            .table-wrap {
+                overflow: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 760px;
+            }
+
+            th,
+            td {
+                padding: 11px 12px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+                font-size: 14px;
+            }
+
+            th {
+                background: #f8fafc;
+                color: #344054;
+                font-size: 12px;
+            }
+
+            tr:hover td {
+                background: #fbfdff;
+            }
+
+            tr.selected td {
+                background: var(--blue-soft);
+            }
+
+            .field {
+                display: grid;
+                gap: 6px;
+                margin-bottom: 12px;
+            }
+
+            label {
+                color: #344054;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            input,
+            select,
+            textarea {
+                width: 100%;
+                min-height: 38px;
+                border: 1px solid #b8c4d6;
+                border-radius: 6px;
+                background: #fff;
+                color: var(--ink);
+                padding: 9px 10px;
+            }
+
+            textarea {
+                min-height: 96px;
+                resize: vertical;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 12px;
+            }
+
+            .grid2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .button {
+                min-height: 36px;
+                border: 1px solid #b8c4d6;
+                border-radius: 6px;
+                background: #fff;
+                color: var(--ink);
+                padding: 8px 11px;
+                cursor: pointer;
+            }
+
+            .button:hover {
+                background: var(--blue-soft);
+                border-color: #9bb4e8;
+            }
+
+            .button.primary {
+                background: var(--blue);
+                border-color: var(--blue);
+                color: #fff;
+            }
+
+            .button.danger {
+                background: var(--red);
+                border-color: var(--red);
+                color: #fff;
+            }
+
+            .button.small {
+                min-height: 30px;
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            .code {
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 12px;
+                color: #344054;
+            }
+
+            .badge {
+                display: inline-flex;
+                min-height: 24px;
+                align-items: center;
+                padding: 3px 8px;
+                border-radius: 99px;
+                background: #eaf7ee;
+                color: #166534;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .message {
+                margin-bottom: 14px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 10px 12px;
+                background: #fff;
+                color: var(--muted);
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            .message.ok {
+                color: #166534;
+                border-color: #bbf7d0;
+                background: #f0fdf4;
+            }
+
+            .message.error {
+                color: #991b1b;
+                border-color: #fecaca;
+                background: #fef2f2;
+            }
+
+            .empty {
+                display: none;
+                margin-top: 14px;
+                border: 1px dashed var(--line);
+                border-radius: 8px;
+                padding: 22px;
+                background: #fff;
+                color: var(--muted);
+                text-align: center;
+            }
+
+            .empty.show {
+                display: block;
+            }
+
+            @media (max-width: 980px) {
+                .layout {
+                    grid-template-columns: 1fr;
+                }
+
+                .side {
+                    border-left: 0;
+                    border-top: 1px solid var(--line);
+                }
+            }
+
+            @media (max-width: 620px) {
+                .topbar,
+                .toolbar {
+                    align-items: stretch;
+                    flex-direction: column;
+                }
+
+                .grid2 {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="app">
+            <header class="topbar">
+                <div>
+                    <h1>Template Manager</h1>
+                    <p class="subtitle">จัดการและบันทึกเทมเพลทลง API/MSSQL จริงผ่าน <span class="code">/api/esign/templates</span></p>
+                </div>
+                <div class="status"><span class="dot"></span><span id="statusText">Ready</span></div>
+            </header>
+
+            <section class="layout">
+                <section class="main">
+                    <div class="message" id="message">
+                        ถ้าเปิดจาก <span class="code">file:///D:/...</span> ให้เปิด server ที่ port 8080 ก่อน เช่น <span class="code">mvn jetty:run</span>
+                    </div>
+
+                    <div class="toolbar">
+                        <input id="searchInput" type="search" placeholder="ค้นหา template code, sign group, workflow">
+                        <div class="actions">
+                            <button class="button" id="reloadButton" type="button">Reload</button>
+                            <button class="button primary" id="newButton" type="button">New Template</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table aria-label="templates">
+                            <thead>
+                                <tr>
+                                    <th>Template</th>
+                                    <th>Sign Group</th>
+                                    <th>Workflow</th>
+                                    <th>PDF</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="templateRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="empty" id="emptyState">ยังไม่มี template ในฐานข้อมูล หรือยังไม่ได้เชื่อมต่อ API</div>
+                </section>
+
+                <aside class="side">
+                    <section class="panel">
+                        <h2>API</h2>
+                        <div class="field">
+                            <label for="apiBase">API Base URL</label>
+                            <input id="apiBase" placeholder="http://localhost:8080/docs">
+                        </div>
+                        <div class="actions">
+                            <button class="button" id="healthButton" type="button">Check API</button>
+                            <button class="button" id="initDbButton" type="button">Init DB Tables</button>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 id="formTitle">New Template</h2>
+                        <form id="templateForm">
+                            <div class="grid2">
+                                <div class="field">
+                                    <label for="templateCode">Template Code</label>
+                                    <input id="templateCode" required placeholder="PO-APPROVAL-001">
+                                </div>
+                                <div class="field">
+                                    <label for="pageCount">Page Count</label>
+                                    <input id="pageCount" type="number" min="1" value="1">
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="signGroupName">Sign Group Name</label>
+                                <input id="signGroupName" required placeholder="Purchase Approval">
+                            </div>
+
+                            <div class="grid2">
+                                <div class="field">
+                                    <label for="samplePdfName">Sample PDF Name</label>
+                                    <input id="samplePdfName" placeholder="sample.pdf">
+                                </div>
+                                <div class="field">
+                                    <label for="samplePdfFile">Sample PDF File</label>
+                                    <input id="samplePdfFile" type="file" accept="application/pdf">
+                                </div>
+                            </div>
+
+                            <div class="grid2">
+                                <div class="field">
+                                    <label for="workflowProcess">Workflow Process</label>
+                                    <input id="workflowProcess" placeholder="WF_PO_APPROVAL">
+                                </div>
+                                <div class="field">
+                                    <label for="mssqlTable">MSSQL Table</label>
+                                    <input id="mssqlTable" value="esign_template">
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="callbackUrl">Legacy Callback URL</label>
+                                <input id="callbackUrl" value="/legacy/esign/callback.php">
+                            </div>
+
+                            <div class="field">
+                                <label for="rolesText">Roles หนึ่งบรรทัดต่อหนึ่ง role: name,email</label>
+                                <textarea id="rolesText">Requester,requester@company.com
+Finance,finance@company.com
+Director,director@company.com</textarea>
+                            </div>
+
+                            <div class="field">
+                                <label for="fieldsText">Signature Boxes: role,page,x,y,w,h</label>
+                                <textarea id="fieldsText">Requester,1,0.34,0.58,0.31,0.085
+Finance,1,0.34,0.70,0.31,0.085
+Director,1,0.34,0.82,0.31,0.085</textarea>
+                            </div>
+
+                            <div class="actions">
+                                <button class="button primary" type="submit">Save to Server</button>
+                                <button class="button" id="loadButton" type="button">Load by Code</button>
+                                <button class="button danger" id="deleteButton" type="button">Delete</button>
+                            </div>
+                        </form>
+                    </section>
+                </aside>
+            </section>
+        </main>
+
+        <script>
+            const els = {
+                apiBase: document.querySelector("#apiBase"),
+                message: document.querySelector("#message"),
+                statusText: document.querySelector("#statusText"),
+                searchInput: document.querySelector("#searchInput"),
+                rows: document.querySelector("#templateRows"),
+                empty: document.querySelector("#emptyState"),
+                reloadButton: document.querySelector("#reloadButton"),
+                newButton: document.querySelector("#newButton"),
+                healthButton: document.querySelector("#healthButton"),
+                initDbButton: document.querySelector("#initDbButton"),
+                form: document.querySelector("#templateForm"),
+                formTitle: document.querySelector("#formTitle"),
+                templateCode: document.querySelector("#templateCode"),
+                pageCount: document.querySelector("#pageCount"),
+                signGroupName: document.querySelector("#signGroupName"),
+                samplePdfName: document.querySelector("#samplePdfName"),
+                samplePdfFile: document.querySelector("#samplePdfFile"),
+                workflowProcess: document.querySelector("#workflowProcess"),
+                mssqlTable: document.querySelector("#mssqlTable"),
+                callbackUrl: document.querySelector("#callbackUrl"),
+                rolesText: document.querySelector("#rolesText"),
+                fieldsText: document.querySelector("#fieldsText"),
+                loadButton: document.querySelector("#loadButton"),
+                deleteButton: document.querySelector("#deleteButton")
+            };
+            let templates = [];
+            let selectedCode = "";
+
+            function defaultBaseUrl() {
+                if (location.protocol === "file:")
+                    return "http://localhost:8080/docs";
+                return location.origin;
+            }
+
+            async function detectApiBase() {
+                if (location.protocol !== "file:" || localStorage.getItem("esign-api-base"))
+                    return;
+
+                const candidates = ["http://localhost:8080/docs", "http://localhost:8081/docs"];
+                for (const candidate of candidates) {
+                    try {
+                        const response = await fetch(`${candidate}/api/esign/health`);
+                        if (response.ok) {
+                            els.apiBase.value = candidate;
+                            return;
+                        }
+                    } catch {
+                        // Try the next local dev port.
+                    }
+                }
+            }
+
+            function apiUrl(path) {
+                return `${els.apiBase.value.replace(/\/$/, "")}${path}`;
+            }
+
+            function setMessage(text, type = "") {
+                els.message.className = `message ${type}`.trim();
+                els.message.textContent = text;
+                els.statusText.textContent = text;
+            }
+
+            function safe(value) {
+                return String(value || "")
+                        .replaceAll("&", "&amp;")
+                        .replaceAll("<", "&lt;")
+                        .replaceAll(">", "&gt;")
+                        .replaceAll('"', "&quot;");
+            }
+
+            async function requestJson(path, options = {}) {
+                const response = await fetch(apiUrl(path), options);
+                const text = await response.text();
+                const data = text ? JSON.parse(text) : {};
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+                return data;
+            }
+
+            function roleId(name) {
+                return `role-${String(name || "signer").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "signer"}`;
+            }
+
+            function parseRoles() {
+                return els.rolesText.value
+                        .split(/\r?\n/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .map((line, index) => {
+                            const parts = line.split(",");
+                            const name = (parts[0] || `Role ${index + 1}`).trim();
+                            return {
+                                id: roleId(name),
+                                name,
+                                defaultEmail: (parts[1] || "").trim(),
+                                signingOrder: index + 1,
+                                active: true
+                            };
+                        });
+            }
+
+            function parseFields(roles) {
+                const roleMap = new Map(roles.map((role) => [role.name.toLowerCase(), role]));
+                return els.fieldsText.value
+                        .split(/\r?\n/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .map((line, index) => {
+                            const parts = line.split(",").map((part) => part.trim());
+                            const role = roleMap.get((parts[0] || "").toLowerCase()) || roles[0];
+                            return {
+                                id: `field-${index + 1}`,
+                                roleId: role.id,
+                                roleName: role.name,
+                                page: Number(parts[1] || 1),
+                                xRatio: Number(parts[2] || 0.34),
+                                yRatio: Number(parts[3] || 0.58),
+                                widthRatio: Number(parts[4] || 0.31),
+                                heightRatio: Number(parts[5] || 0.085),
+                                pdfBoxAnchor: "top-left"
+                            };
+                        });
+            }
+
+            function buildTemplate() {
+                const roles = parseRoles();
+                return {
+                    signGroup: {
+                        name: els.signGroupName.value.trim(),
+                        templateCode: els.templateCode.value.trim()
+                    },
+                    samplePdf: {
+                        fileName: els.samplePdfFile.files[0]?.name || els.samplePdfName.value.trim() || null,
+                        pageCount: Number(els.pageCount.value || 1)
+                    },
+                    roles,
+                    signatureFields: parseFields(roles),
+                    workflow: {
+                        engineProcess: els.workflowProcess.value.trim(),
+                        legacyCallbackUrl: els.callbackUrl.value.trim(),
+                        mssqlTable: els.mssqlTable.value.trim()
+                    }
+                };
+            }
+
+            function templateToForm(template) {
+                selectedCode = template.signGroup?.templateCode || "";
+                els.formTitle.textContent = selectedCode ? `Edit ${selectedCode}` : "New Template";
+                els.templateCode.value = selectedCode;
+                els.signGroupName.value = template.signGroup?.name || "";
+                els.pageCount.value = template.samplePdf?.pageCount || 1;
+                els.samplePdfName.value = template.samplePdf?.fileName || "";
+                els.workflowProcess.value = template.workflow?.engineProcess || "";
+                els.callbackUrl.value = template.workflow?.legacyCallbackUrl || "";
+                els.mssqlTable.value = template.workflow?.mssqlTable || "esign_template";
+                els.rolesText.value = (template.roles || [])
+                        .map((role) => `${role.name || ""},${role.defaultEmail || ""}`)
+                        .join("\n");
+                els.fieldsText.value = (template.signatureFields || [])
+                        .map((field) => `${field.roleName || ""},${field.page || 1},${field.xRatio || 0},${field.yRatio || 0},${field.widthRatio || 0},${field.heightRatio || 0}`)
+                        .join("\n");
+            }
+
+            function clearForm() {
+                selectedCode = "";
+                els.formTitle.textContent = "New Template";
+                els.form.reset();
+                els.pageCount.value = 1;
+                els.mssqlTable.value = "esign_template";
+                els.callbackUrl.value = "/legacy/esign/callback.php";
+                els.rolesText.value = "Requester,requester@company.com\nFinance,finance@company.com\nDirector,director@company.com";
+                els.fieldsText.value = "Requester,1,0.34,0.58,0.31,0.085\nFinance,1,0.34,0.70,0.31,0.085\nDirector,1,0.34,0.82,0.31,0.085";
+                els.templateCode.focus();
+            }
+
+            function renderRows() {
+                const query = els.searchInput.value.trim().toLowerCase();
+                const rows = templates.filter((item) => {
+                    if (!query)
+                        return true;
+                    return [
+                        item.templateCode,
+                        item.signGroupName,
+                        item.workflowProcess,
+                        item.samplePdfName
+                    ].join(" ").toLowerCase().includes(query);
+                });
+
+                els.empty.classList.toggle("show", rows.length === 0);
+                els.rows.innerHTML = rows.map((item) => `
+              <tr class="${item.templateCode === selectedCode ? "selected" : ""}" data-code="${safe(item.templateCode)}">
+                <td><strong>${safe(item.templateCode)}</strong></td>
+                <td>${safe(item.signGroupName)}</td>
+                <td><span class="code">${safe(item.workflowProcess || "-")}</span></td>
+                <td>${safe(item.samplePdfName || "-")}<br><span class="code">${safe(item.pageCount)} page(s)</span></td>
+                <td><span class="badge">${item.active ? "Active" : "Inactive"}</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="button small" type="button" data-action="load" data-code="${safe(item.templateCode)}">Load</button>
+                    <button class="button small danger" type="button" data-action="delete" data-code="${safe(item.templateCode)}">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `).join("");
+            }
+
+            async function reloadTemplates() {
+                setMessage("Loading templates...");
+                const data = await requestJson("/api/esign/templates");
+                templates = data.templates || [];
+                renderRows();
+                setMessage(`Loaded ${templates.length} template(s)`, "ok");
+            }
+
+            async function loadTemplate(code) {
+                const templateCode = code || els.templateCode.value.trim();
+                if (!templateCode) {
+                    setMessage("กรุณาระบุ Template Code", "error");
+                    return;
+                }
+
+                const template = await requestJson(`/api/esign/templates/${encodeURIComponent(templateCode)}`);
+                templateToForm(template);
+                renderRows();
+                setMessage(`Loaded ${templateCode}`, "ok");
+            }
+
+            async function saveTemplate(event) {
+                event.preventDefault();
+                const template = buildTemplate();
+                if (!template.signGroup.templateCode || !template.signGroup.name) {
+                    setMessage("Template Code และ Sign Group Name จำเป็นต้องกรอก", "error");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("templateJson", JSON.stringify(template));
+                if (els.samplePdfFile.files[0]) {
+                    formData.append("samplePdf", els.samplePdfFile.files[0]);
+                }
+
+                const result = await requestJson("/api/esign/templates", {
+                    method: "POST",
+                    body: formData
+                });
+
+                selectedCode = result.templateCode || template.signGroup.templateCode;
+                setMessage(`Saved ${selectedCode} to server`, "ok");
+                await reloadTemplates();
+            }
+
+            async function deleteTemplate(code) {
+                const templateCode = code || els.templateCode.value.trim();
+                if (!templateCode) {
+                    setMessage("กรุณาระบุ Template Code ที่ต้องการลบ", "error");
+                    return;
+                }
+
+                if (!confirm(`Delete template ${templateCode}?`))
+                    return;
+
+                await requestJson(`/api/esign/templates/${encodeURIComponent(templateCode)}`, {
+                    method: "DELETE"
+                });
+                if (selectedCode === templateCode)
+                    clearForm();
+                setMessage(`Deleted ${templateCode}`, "ok");
+                await reloadTemplates();
+            }
+
+            els.apiBase.value = localStorage.getItem("esign-api-base") || defaultBaseUrl();
+            els.apiBase.addEventListener("change", () => {
+                localStorage.setItem("esign-api-base", els.apiBase.value.trim());
+            });
+
+            els.healthButton.addEventListener("click", async () => {
+                try {
+                    const data = await requestJson("/api/esign/health");
+                    setMessage(`API OK: ${data.service || "esign"}`, "ok");
+                } catch (error) {
+                    setMessage(error.message, "error");
+                }
+            });
+
+            els.initDbButton.addEventListener("click", async () => {
+                try {
+                    const data = await requestJson("/api/esign/db/init", {method: "POST"});
+                    setMessage(data.message || "Database initialized", "ok");
+                    await reloadTemplates();
+                } catch (error) {
+                    setMessage(error.message, "error");
+                }
+            });
+
+            els.reloadButton.addEventListener("click", () => reloadTemplates().catch((error) => setMessage(error.message, "error")));
+            els.newButton.addEventListener("click", clearForm);
+            els.searchInput.addEventListener("input", renderRows);
+            els.form.addEventListener("submit", (event) => saveTemplate(event).catch((error) => setMessage(error.message, "error")));
+            els.loadButton.addEventListener("click", () => loadTemplate().catch((error) => setMessage(error.message, "error")));
+            els.deleteButton.addEventListener("click", () => deleteTemplate().catch((error) => setMessage(error.message, "error")));
+
+            els.rows.addEventListener("click", (event) => {
+                const button = event.target.closest("button[data-action]");
+                const row = event.target.closest("tr[data-code]");
+
+                if (button?.dataset.action === "load") {
+                    loadTemplate(button.dataset.code).catch((error) => setMessage(error.message, "error"));
+                    return;
+                }
+
+                if (button?.dataset.action === "delete") {
+                    deleteTemplate(button.dataset.code).catch((error) => setMessage(error.message, "error"));
+                    return;
+                }
+
+                if (row) {
+                    selectedCode = row.dataset.code;
+                    renderRows();
+                }
+            });
+
+            detectApiBase()
+                    .then(reloadTemplates)
+                    .catch((error) => setMessage(error.message, "error"));
+        </script>
+    </body>
+</html>
