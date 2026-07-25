@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PR Signature Template Setup</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <span class="topbar-icon">📋</span>
+    <div class="topbar-title">
+      <div class="topbar-main">PR Document — Signature Template Setup</div>
+      <div class="topbar-sub">ระบบกำหนด Template ลายเซ็น สำหรับเอกสารจัดซื้อ</div>
+    </div>
+    <nav class="topbar-nav">
+      <button class="tab-btn active" data-step="0">📄 ข้อมูลหลัก</button>
+      <button class="tab-btn" data-step="1">👥 กลุ่มผู้ลงนาม</button>
+      <button class="tab-btn" data-step="2">📌 วางตำแหน่ง</button>
+      <button class="tab-btn" data-step="3">💾 บันทึก</button>
+    </nav>
+  </div>
+
+  <!-- STEP INDICATOR -->
+  <div class="step-bar">
+    <div class="step-item active" data-step="0">
+      <span class="step-num">1</span> ข้อมูลหลัก
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step-item" data-step="1">
+      <span class="step-num">2</span> กลุ่มผู้ลงนาม
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step-item" data-step="2">
+      <span class="step-num">3</span> วางตำแหน่ง
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step-item" data-step="3">
+      <span class="step-num">4</span> บันทึก
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content-wrap">
+    <div class="card main-card">
+      <!-- Section Header -->
+      <div class="section-header" id="sectionHeader">
+        <span class="section-icon" id="sectionIcon">📄</span>
+        <div>
+          <h2 id="sectionTitle">Template ชนิดเอกสาร</h2>
+          <p id="sectionSubtitle">กำหนด document type และ purchase group</p>
+        </div>
+      </div>
+
+      <!-- STEP 0: Template Config -->
+      <div id="step-0" class="step-panel active">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>ชนิดเอกสาร (Document Type)</label>
+            <select id="docType">
+              <option value="">-- เลือก --</option>
+              <option value="PR - ใบขอซื้อ" selected>PR - ใบขอซื้อ</option>
+              <option value="PO - ใบสั่งซื้อ">PO - ใบสั่งซื้อ</option>
+              <option value="GR - ใบรับสินค้า">GR - ใบรับสินค้า</option>
+              <option value="IV - ใบแจ้งหนี้">IV - ใบแจ้งหนี้</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>กลุ่มการจัดซื้อ (Purchase Group)</label>
+            <select id="purchaseGroup">
+              <option value="">-- เลือก --</option>
+              <option value="กลุ่ม A - ทั่วไป">กลุ่ม A - ทั่วไป</option>
+              <option value="กลุ่ม B - IT">กลุ่ม B - IT</option>
+              <option value="กลุ่ม C - วัตถุดิบ">กลุ่ม C - วัตถุดิบ</option>
+              <option value="กลุ่ม D - บริการ">กลุ่ม D - บริการ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ชื่อ Template</label>
+            <input type="text" id="templateName" placeholder="เช่น PR-Standard-v1" />
+          </div>
+          <div class="form-group">
+            <label>รายละเอียด</label>
+            <input type="text" id="description" placeholder="อธิบายการใช้งาน template นี้" />
+          </div>
+          <div class="form-group">
+            <label>สถานะ Template</label>
+            <div class="status-btns">
+              <button class="status-btn" data-status="Active">Active</button>
+              <button class="status-btn active" data-status="Draft">Draft</button>
+              <button class="status-btn" data-status="Inactive">Inactive</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: Signature Groups -->
+      <div id="step-1" class="step-panel">
+        <div class="add-group-row">
+          <input type="text" id="newGroupName" placeholder="ชื่อกลุ่มผู้ลงนาม เช่น กลุ่ม A" />
+          <button class="btn btn-primary" id="addGroupBtn">+ เพิ่มกลุ่ม</button>
+        </div>
+        <div id="groupList">
+          <p class="empty-msg">ยังไม่มีกลุ่มผู้ลงนาม — เพิ่มกลุ่มแรกด้านบน</p>
+        </div>
+      </div>
+
+      <!-- STEP 2: PDF Scanner -->
+      <div id="step-2" class="step-panel">
+        <div class="pdf-layout">
+          <!-- Left: Canvas -->
+          <div class="pdf-canvas-area">
+            <div class="pdf-toolbar">
+              <label class="btn btn-primary btn-sm">
+                📄 อัปโหลด PDF
+                <input type="file" id="pdfUpload" accept=".pdf" style="display:none" />
+              </label>
+              <button class="btn btn-ghost btn-sm" id="placeModeBtn">✏️ วางกล่องลายเซ็น</button>
+              <div class="zoom-ctrl">
+                <button class="btn btn-subtle btn-sm" id="zoomOut">−</button>
+                <span id="zoomLabel">100%</span>
+                <button class="btn btn-subtle btn-sm" id="zoomIn">+</button>
+              </div>
+              <div class="page-ctrl" id="pageCtrl" style="display:none">
+                <button class="btn btn-subtle btn-sm" id="prevPage">◀</button>
+                <span id="pageLabel">หน้า 1/1</span>
+                <button class="btn btn-subtle btn-sm" id="nextPage">▶</button>
+              </div>
+            </div>
+            <div id="placeBanner" class="place-banner" style="display:none">
+              ⚠️ โหมดวางกล่อง — ลากเมาส์บน PDF เพื่อกำหนดตำแหน่งลายเซ็น
+            </div>
+            <div class="canvas-container" id="canvasContainer">
+              <div class="canvas-inner" id="canvasInner">
+                <canvas id="pdfCanvas" width="595" height="842"></canvas>
+                <div id="boxOverlay" class="box-overlay"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Right: Panel -->
+          <div class="pdf-right-panel">
+            <div class="card panel-card">
+              <p class="panel-label">เลือกกลุ่มที่จะวาง</p>
+              <div id="groupSelector">
+                <p class="empty-msg">ยังไม่มีกลุ่ม — สร้างในขั้นตอนที่ 2</p>
+              </div>
+            </div>
+            <div class="card panel-card" style="margin-top:12px">
+              <p class="panel-label">กล่องที่วางแล้ว (<span id="boxCount">0</span>)</p>
+              <div id="boxList">
+                <p class="empty-msg">ยังไม่มีกล่อง</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Preview + Save -->
+      <div id="step-3" class="step-panel">
+        <div class="grid-2">
+          <div>
+            <div class="card preview-card">
+              <h3>📋 ข้อมูล Template</h3>
+              <div id="previewConfig"></div>
+            </div>
+            <div class="card preview-card" style="margin-top:12px">
+              <h3>📦 กล่องลายเซ็น (<span id="previewBoxCount">0</span>)</h3>
+              <div id="previewBoxes"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card preview-card">
+              <h3>👥 กลุ่มผู้ลงนาม (<span id="previewGroupCount">0</span>)</h3>
+              <div id="previewGroups"></div>
+            </div>
+            <div class="save-actions">
+              <button class="btn btn-primary btn-full" id="saveBtn">💾 บันทึก Template</button>
+              <button class="btn btn-ghost btn-full" id="exportJsonBtn">⬇️ Export JSON Config</button>
+              <button class="btn btn-subtle btn-full" id="exportPdfBtn">📄 Export PDF + Signature Fields</button>
+            </div>
+            <div id="savedMsg" class="saved-msg" style="display:none">
+              <p class="saved-ok">✅ บันทึก Template เรียบร้อยแล้ว</p>
+              <p class="saved-sub" id="savedDetail"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NAV BUTTONS -->
+      <div class="nav-row">
+        <button class="btn btn-subtle" id="backBtn" disabled>◀ ย้อนกลับ</button>
+        <button class="btn btn-primary" id="nextBtn">ถัดไป ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
