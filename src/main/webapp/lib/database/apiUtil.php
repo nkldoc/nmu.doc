@@ -177,17 +177,32 @@ class apiUtil {
     }
 
     public function mnUser($data, $mode = "") {
+        // Guard: ป้องกัน session หลุดแล้วเข้าถึง $_SESSION แบบ undefined key
+        // ซึ่งเคยทำให้ PHP fatal error กลางทางผ่าน FastCGI bridge จน php-cgi
+        // worker ตาย และลากให้ request อื่นค้างตามไปด้วย (worker pool หด)
+        $user_id = $_SESSION["user_id"] ?? null;
+        if ($user_id === null) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Session expired',
+            ]);
+            exit;
+        }
+        $dc_cost_id = $_SESSION["dc_cost_id"] ?? null;
+
         if ($mode == "") {
             $mode = (isset($data["mode"])) ? $data["mode"] : "";
         }
         if (strtoupper($mode) == "ADD") {
-            $data["dc_user_create_id"] = $_SESSION["user_id"];
-            $data["dc_user_create_cost_id"] = $_SESSION["dc_cost_id"];
+            $data["dc_user_create_id"] = $user_id;
+            $data["dc_user_create_cost_id"] = $dc_cost_id;
             $data["d_create"] = date("Y-m-d H:i:s");
         }
 
-        $data["dc_user_update_id"] = $_SESSION["user_id"];
-        $data["dc_user_update_cost_id"] = $_SESSION["dc_cost_id"];
+        $data["dc_user_update_id"] = $user_id;
+        $data["dc_user_update_cost_id"] = $dc_cost_id;
         $data["d_update"] = date("Y-m-d H:i:s");
 
         return $data;
@@ -196,5 +211,4 @@ class apiUtil {
     public function __Destruct() {
 
     }
-
 }

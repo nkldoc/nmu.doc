@@ -57,7 +57,11 @@
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+            <version>4.1.0</version>
+        </dependency>
         <dependency>
             <groupId>com.testautomationguru.pdfutil</groupId>
             <artifactId>pdf-util</artifactId>

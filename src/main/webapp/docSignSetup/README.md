@@ -1,3 +1,32 @@
+คำสั่งรันบนเครื่อง Windows (D:\mobile\)
+
+React (Vite) — ทำได้เลย:
+
+bash
+cd D:\mobile\pr-signature-app
+npm install
+npm run dev
+# เปิด http://localhost:5173
+
+Java Maven — ต้องติดตั้ง Maven ก่อน:
+
+bash
+# ดาวน์โหลด: https://maven.apache.org/download.cgi
+cd D:\mobile\pr-signature-backend
+mvn clean package
+# copy target/pr-signature.war → Tomcat/webapps/
+
+PHP — ต้องติดตั้ง PHP + Composer ก่อน:
+
+bash
+# PHP: https://windows.php.net/download
+# Composer: https://getcomposer.org
+cd D:\mobile\pr-signature-php
+composer install
+composer start
+# เปิด http://localhost:8081
+
+
 # PR Signature Template Setup
 
 ระบบกำหนด Template ลายเซ็น สำหรับเอกสารจัดซื้อ (PR/PO/GR/IV)
