@@ -91,8 +91,11 @@
   let currentPage = 1;
   let totalPages = 0;
   let selectedFieldId = null;
+  let renderRequestId = 0;
+  let activeRenderTask = null;
   const pageSizes = {};
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '../js/pdf.worker.min.js';
+  const pdfJsReady = typeof window.pdfjsLib !== 'undefined';
+  if (pdfJsReady) pdfjsLib.GlobalWorkerOptions.workerSrc = '../js/pdf.worker.min.js';
 
   const thaiDate = () => new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(new Date());
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -112,6 +115,28 @@
     return roleName;
   };
   const actionEnabled = value => value !== false && value !== 'false';
+
+  async function renderPdfToCanvas(pdfPage, viewport, ratio, requestId) {
+    if (activeRenderTask) {
+      const previousTask = activeRenderTask;
+      previousTask.cancel();
+      try { await previousTask.promise; } catch (error) {
+        if (!error || error.name !== 'RenderingCancelledException') throw error;
+      }
+    }
+    if (requestId !== renderRequestId) return false;
+    const task = pdfPage.render({ canvasContext: pdfCanvas.getContext('2d'), viewport, transform: ratio === 1 ? null : [ratio, 0, 0, ratio, 0, 0] });
+    activeRenderTask = task;
+    try {
+      await task.promise;
+      return true;
+    } catch (error) {
+      if (error && error.name === 'RenderingCancelledException') return false;
+      throw error;
+    } finally {
+      if (activeRenderTask === task) activeRenderTask = null;
+    }
+  }
 
   function activeRoles() {
     return roles.filter(role => documentRoleIds.has(role.id)).sort((a, b) => a.order - b.order);
@@ -397,7 +422,12 @@
 
   function saveJsonToLocalDraft() {
     const data = payload();
-    localStorage.setItem('pdfbox-involved-party-fields-json', JSON.stringify(data));
+    try {
+      localStorage.setItem('pdfbox-involved-party-fields-json', JSON.stringify(data));
+    } catch (error) {
+      // ลายเซ็นแบบ Data URL อาจทำให้เกินโควตา localStorage แต่ยังต้องส่งออกไฟล์ได้
+      console.warn('บันทึกฉบับร่างในเบราว์เซอร์ไม่สำเร็จ', error);
+    }
     return data;
   }
 
@@ -501,8 +531,10 @@
 
   async function showPage(pageNumber) {
     if (!documentPdf || pageNumber < 1 || pageNumber > totalPages) return;
+    const requestId = ++renderRequestId;
     currentPage = pageNumber;
     const pdfPage = await documentPdf.getPage(currentPage);
+    if (requestId !== renderRequestId) return;
     const original = pdfPage.getViewport({ scale: 1 });
     pageWidth = original.width; pageHeight = original.height;
     const viewport = pdfPage.getViewport({ scale: 595 / original.width });
@@ -510,7 +542,7 @@
     pageSizes[currentPage] = { displayWidth: viewport.width, displayHeight: viewport.height };
     const ratio = window.devicePixelRatio || 1;
     pdfCanvas.width = Math.floor(viewport.width * ratio); pdfCanvas.height = Math.floor(viewport.height * ratio);
-    await pdfPage.render({ canvasContext: pdfCanvas.getContext('2d'), viewport, transform: ratio === 1 ? null : [ratio, 0, 0, ratio, 0, 0] }).promise;
+    if (!await renderPdfToCanvas(pdfPage, viewport, ratio, requestId) || requestId !== renderRequestId) return;
     document.getElementById('pageCounter').textContent = `หน้า ${currentPage} / ${totalPages}`;
     document.getElementById('prevPageBtn').disabled = currentPage <= 1;
     document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
@@ -522,17 +554,25 @@
   document.getElementById('pdfInput').addEventListener('change', async event => {
     const file = event.target.files[0];
     if (!file) return;
+    if (!pdfJsReady) {
+      coords.textContent = 'ไม่พบ PDF.js กรุณาตรวจสอบไฟล์ ../js/pdf.min.js และ ../js/pdf.worker.min.js';
+      event.target.value = '';
+      return;
+    }
+    const requestId = ++renderRequestId;
     Object.keys(pageSizes).forEach(key => delete pageSizes[key]);
     try {
       coords.textContent = 'กำลังเปิดไฟล์ PDF...';
       const data = await file.arrayBuffer();
       documentPdf = await pdfjsLib.getDocument({ data }).promise;
+      if (requestId !== renderRequestId) return;
       totalPages = documentPdf.numPages;
       currentPage = 1;
       document.getElementById('pageCounter').textContent = `หน้า 1 / ${totalPages}`;
       document.getElementById('prevPageBtn').disabled = true;
       document.getElementById('nextPageBtn').disabled = totalPages <= 1;
       const pdfPage = await documentPdf.getPage(1);
+      if (requestId !== renderRequestId) return;
       const original = pdfPage.getViewport({ scale: 1 });
       pageWidth = original.width; pageHeight = original.height; pdfFileName = file.name;
       const scale = 595 / original.width;
@@ -541,8 +581,7 @@
       page.style.width = `${viewport.width}px`; page.style.height = `${viewport.height}px`;
       const ratio = window.devicePixelRatio || 1;
       pdfCanvas.width = Math.floor(viewport.width * ratio); pdfCanvas.height = Math.floor(viewport.height * ratio);
-      const context = pdfCanvas.getContext('2d');
-      await pdfPage.render({ canvasContext: context, viewport, transform: ratio === 1 ? null : [ratio, 0, 0, ratio, 0, 0] }).promise;
+      if (!await renderPdfToCanvas(pdfPage, viewport, ratio, requestId) || requestId !== renderRequestId) return;
       fields.length = 0; render(); addButton.disabled = false;
       pageLabel.textContent = `หน้า 1 จาก ${documentPdf.numPages} · ${Math.round(pageWidth)} × ${Math.round(pageHeight)} pt`;
       coords.textContent = `เปิด ${file.name} แล้ว — เพิ่มบล็อกผู้เกี่ยวข้องแล้วลากไปวางได้`;
@@ -569,7 +608,11 @@
     const input = document.getElementById('participantName');
     const name = input.value.trim();
     if (!name) return;
-    participants.push({ id: `person-${participants.length + 1}`, name });
+    if (participants.some(person => person.name.localeCompare(name, 'th', { sensitivity: 'base' }) === 0)) {
+      coords.textContent = `มีรายชื่อ ${name} อยู่แล้ว`;
+      return;
+    }
+    participants.push({ id: `person-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name });
     input.value = '';
     renderParticipantList();
   });
@@ -628,7 +671,14 @@
     document.getElementById('app').classList.toggle('preview');
     event.currentTarget.textContent = document.getElementById('app').classList.contains('preview') ? 'กลับไปแก้ไข' : 'ดูตัวอย่างจริง';
   });
-  document.getElementById('clearBtn').addEventListener('click', () => { if (fields.length && confirm('ล้างบล็อกผู้เกี่ยวข้องทั้งหมดหรือไม่?')) { fields.length = 0; render(); } });
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if (!fields.length || !confirm('ล้างบล็อกผู้เกี่ยวข้องทั้งหมดหรือไม่?')) return;
+    fields.length = 0;
+    selectedFieldId = null;
+    render();
+    renderSelectedBlockEditor();
+    coords.textContent = 'ล้างบล็อกผู้เกี่ยวข้องทั้งหมดแล้ว';
+  });
   document.getElementById('exportBtn').addEventListener('click', () => {
     const missing = missingAssignments();
     if (missing.length && !confirm(`ยังมี ${missing.length} บล็อกที่ไม่ได้เลือก role หรือผู้ทำหน้าที่ ต้องการบันทึก JSON ต่อหรือไม่?`)) return;
@@ -638,7 +688,7 @@
     dialog.showModal();
   });
   document.getElementById('closeBtn').addEventListener('click', () => dialog.close());
-  document.getElementById('downloadBtn').addEventListener('click', () => { const blob = new Blob([JSON.stringify(payload(), null, 2)], { type: 'application/json;charset=utf-8' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'pdfbox-involved-party-fields.json'; link.click(); URL.revokeObjectURL(link.href); });
+  document.getElementById('downloadBtn').addEventListener('click', () => { const blob = new Blob([JSON.stringify(payload(), null, 2)], { type: 'application/json;charset=utf-8' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'pdfbox-involved-party-fields.json'; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 0); });
   renderDocumentRoleList();
   renderDefaultSelectors();
 })();
