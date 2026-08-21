@@ -5,10 +5,23 @@ import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.nio.charset.StandardCharsets;
+import javax.imageio.ImageIO;
+
+import com.google.gson.*;
 
 import org.apache.pdfbox.pdmodel.*;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.util.Matrix;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.*;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.*;
 
@@ -17,7 +30,7 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.*;
 public class PdfManagerServlet extends HttpServlet {
 
     // ตรวจสอบให้แน่ใจว่าพาธลงท้ายด้วยสแลช (/) เพื่อป้องกันชื่อไฟล์เพี้ยน
-    private static final String UPLOAD_DIR = "D:/Documents/Sys/2025/procure/supplies/uploads/"; 
+    private static final String UPLOAD_DIR = "D:/Documents/Sys/2025/procure/supplies/uploads/";
     private static final String TEMPLATE_NAME = "currentTemplate.pdf";
 
     @Override
@@ -29,12 +42,21 @@ public class PdfManagerServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         String path = req.getPathInfo();
-        if (path == null) path = "";
+        if (path == null) {
+            path = "";
+        }
         switch (path) {
-            case "/bookmarks": handleListBookmarks(resp); break;
-            case "/serverFiles": handleServerFiles(resp); break;
-            case "/template": handleServeTemplate(resp); break;
-            default: resp.sendError(404, "Not Found");
+            case "/bookmarks":
+                handleListBookmarks(resp);
+                break;
+            case "/serverFiles":
+                handleServerFiles(resp);
+                break;
+            case "/template":
+                handleServeTemplate(resp);
+                break;
+            default:
+                resp.sendError(404, "Not Found");
         }
     }
 
@@ -42,24 +64,477 @@ public class PdfManagerServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
         String path = req.getPathInfo();
-        if (path == null) path = "";
-        switch (path) {
-            case "/uploadTemplate": handleUploadTemplate(req, resp); break;
-            case "/edit":           handleEdit(req, resp); break;
-            case "/deletePages":    deletePages(req, resp); break;
-            default: resp.sendError(404, "Not Found");
+        if (path == null) {
+            path = "";
         }
+        switch (path) {
+            case "/uploadTemplate":
+                handleUploadTemplate(req, resp);
+                break;
+            case "/edit":
+                handleEdit(req, resp);
+                break;
+            case "/deletePages":
+                deletePages(req, resp);
+                break;
+            case "/generate":
+                handleGeneratePdf(req, resp);
+                break;
+            default:
+                resp.sendError(404, "Not Found");
+        }
+    }
+
+    // ---------- Generate PDF from the JSON currently shown in the layout UI ----------
+    // รองรับ 2 แบบ: (1) multipart/form-data ที่แนบไฟล์ PDF ("pdfFile") + JSON ("payload") มาด้วย — ใช้จาก layout.html
+    //              (2) application/json ธรรมดา (ของเดิม) — ใช้ PDF ที่เคยอัปโหลดไว้ที่ UPLOAD_DIR/TEMPLATE_NAME
+    private void handleGeneratePdf(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException, ServletException {
+        boolean isMultipart = req.getContentType() != null
+                && req.getContentType().toLowerCase(Locale.ROOT).startsWith("multipart/");
+
+        Part pdfPart = null;
+        JsonObject payload;
+        if (isMultipart) {
+            try {
+                pdfPart = req.getPart("pdfFile");
+            } catch (Exception ignored) {
+            }
+
+            // สำคัญ: ห้ามใช้ req.getParameter("payload") กับ multipart form-data
+            // เพราะ container จะถอดรหัส field เป็น ISO-8859-1 โดยดีฟอลต์ ทำให้ข้อความไทย (UTF-8)
+            // กลายเป็นอักขระขยะ (เช่น U+0087) จนฟอนต์หา glyph ไม่เจอ — อ่านจาก Part.getInputStream()
+            // แล้วถอดรหัสเป็น UTF-8 เองแทน เพื่อไม่พึ่งค่าดีฟอลต์ของ container
+            String payloadText = null;
+            Part payloadPart = req.getPart("payload");
+            if (payloadPart != null) {
+                try (Reader reader = new InputStreamReader(payloadPart.getInputStream(), StandardCharsets.UTF_8)) {
+                    StringBuilder sb = new StringBuilder();
+                    char[] buf = new char[4096];
+                    int n;
+                    while ((n = reader.read(buf)) != -1) {
+                        sb.append(buf, 0, n);
+                    }
+                    payloadText = sb.toString();
+                }
+            }
+            if (payloadText == null || payloadText.trim().isEmpty()) {
+                writeJsonError(resp, 400, "ไม่พบข้อมูล payload");
+                return;
+            }
+            try {
+                payload = JsonParser.parseString(payloadText).getAsJsonObject();
+            } catch (Exception e) {
+                writeJsonError(resp, 400, "JSON ไม่ถูกต้อง: " + e.getMessage());
+                return;
+            }
+        } else {
+            try (Reader reader = new InputStreamReader(req.getInputStream(), "UTF-8")) {
+                payload = JsonParser.parseReader(reader).getAsJsonObject();
+            } catch (Exception e) {
+                writeJsonError(resp, 400, "JSON ไม่ถูกต้อง: " + e.getMessage());
+                return;
+            }
+        }
+
+        JsonArray fields = jsonArray(payload, "signatureFields", "involvedPartyFields", "fields", "boxes");
+        if (fields == null) {
+            writeJsonError(resp, 400, "ไม่พบ signatureFields ใน JSON");
+            return;
+        }
+
+        String requestedName = jsonString(payload, "fileName", "docId");
+        String downloadName = sanitizeDownloadName(requestedName);
+        if (downloadName.isEmpty()) {
+            downloadName = "saved-document";
+        }
+        if (!downloadName.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            downloadName += ".pdf";
+        }
+
+        boolean hasUploadedPdf = pdfPart != null && pdfPart.getSize() > 0;
+        File savedPdf = new File(UPLOAD_DIR + TEMPLATE_NAME);
+        if (!hasUploadedPdf && !savedPdf.isFile()) {
+            writeJsonError(resp, 400, "ไม่พบไฟล์ PDF ต้นฉบับ กรุณาอัปโหลดไฟล์ PDF ก่อน");
+            return;
+        }
+
+        byte[] generatedPdf;
+        try (PDDocument document = hasUploadedPdf
+                ? PDDocument.load(pdfPart.getInputStream())
+                : PDDocument.load(savedPdf); InputStream fontStream = getServletContext().getResourceAsStream(
+                "/lib/tcpdf/fonts/THSarabun.ttf"); InputStream boldFontStream = getServletContext().getResourceAsStream(
+                        "/lib/tcpdf/fonts/THSarabun Bold.ttf"); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            if (fontStream == null || boldFontStream == null) {
+                throw new IOException("ไม่พบฟอนต์ THSarabun");
+            }
+            PDFont font = PDType0Font.load(document, fontStream, true);
+            PDFont boldFont = PDType0Font.load(document, boldFontStream, true);
+            // ฝัง (bake) การหมุนหน้าลงในเนื้อหาจริง แล้วเคลียร์ /Rotate เป็น 0
+            // เพื่อให้ viewer/renderer ใดก็ตามแสดงผลถูกทาง แม้ตัวที่ไม่รองรับ /Rotate
+            for (PDPage p : document.getPages()) {
+                normalizePageRotation(document, p);
+            }
+            for (JsonElement element : fields) {
+                if (element != null && element.isJsonObject()) {
+                    drawJsonField(document, font, boldFont, element.getAsJsonObject());
+                }
+            }
+            addBookmarks(document, payload.getAsJsonArray("bookmarks"));
+            document.save(output);
+            generatedPdf = output.toByteArray();
+        } catch (Exception e) {
+            writeJsonError(resp, 500, "สร้าง PDF ไม่สำเร็จ: " + e.getMessage());
+            return;
+        }
+
+        resp.setContentType("application/pdf");
+        resp.setContentLength(generatedPdf.length);
+        resp.setHeader("Cache-Control", "no-store");
+        resp.setHeader("Content-Disposition", "attachment; filename=\"" + downloadName + "\"");
+        resp.getOutputStream().write(generatedPdf);
+    }
+
+    /**
+     * Appends the bookmarks supplied by layout.html to the PDF outline.
+     * Payload page numbers are one-based, while PDFBox page indexes are zero-based.
+     */
+    private void addBookmarks(PDDocument document, JsonArray bookmarks) throws IOException {
+        if (bookmarks == null || bookmarks.size() == 0) {
+            return;
+        }
+
+        PDDocumentOutline outline = document.getDocumentCatalog().getDocumentOutline();
+        if (outline == null) {
+            outline = new PDDocumentOutline();
+            document.getDocumentCatalog().setDocumentOutline(outline);
+        }
+
+        int pageCount = document.getNumberOfPages();
+        for (JsonElement element : bookmarks) {
+            if (element == null || !element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject bookmark = element.getAsJsonObject();
+            String title = jsonString(bookmark, "name", "title");
+            if (title == null || title.trim().isEmpty()) {
+                continue;
+            }
+
+            int pageNumber;
+            try {
+                pageNumber = bookmark.has("page") ? bookmark.get("page").getAsInt() : 0;
+            } catch (Exception ignored) {
+                pageNumber = 0;
+            }
+            if (pageNumber < 1 || pageNumber > pageCount) {
+                throw new IOException("Bookmark '" + title + "' refers to page " + pageNumber
+                        + ", but the PDF has " + pageCount + " page(s)");
+            }
+
+            PDPageFitDestination destination = new PDPageFitDestination();
+            destination.setPage(document.getPage(pageNumber - 1));
+
+            PDOutlineItem item = new PDOutlineItem();
+            item.setTitle(title.trim());
+            item.setDestination(destination);
+            outline.addLast(item);
+        }
+        outline.openNode();
+    }
+
+    // ฝังการหมุนหน้า (จาก /Rotate metadata) ลงในเนื้อหาจริงของหน้า แล้วเซ็ต rotation กลับเป็น 0
+    // ป้องกันปัญหาแสดงกลับหัว/เอียงในวิวเวอร์หรือกระบวนการแปลงไฟล์ที่ไม่อ่านค่า /Rotate
+    private void normalizePageRotation(PDDocument document, PDPage page) throws IOException {
+        int rotation = ((page.getRotation() % 360) + 360) % 360;
+        if (rotation == 0) {
+            return;
+        }
+
+        PDRectangle box = page.getMediaBox();
+        float rawWidth = box.getWidth();
+        float rawHeight = box.getHeight();
+
+        Matrix bakeMatrix;
+        PDRectangle newBox;
+        switch (rotation) {
+            case 90:
+                bakeMatrix = new Matrix(0, 1, -1, 0, rawHeight, 0);
+                newBox = new PDRectangle(rawHeight, rawWidth);
+                break;
+            case 180:
+                bakeMatrix = new Matrix(-1, 0, 0, -1, rawWidth, rawHeight);
+                newBox = new PDRectangle(rawWidth, rawHeight);
+                break;
+            case 270:
+                bakeMatrix = new Matrix(0, -1, 1, 0, 0, rawWidth);
+                newBox = new PDRectangle(rawHeight, rawWidth);
+                break;
+            default:
+                return; // ไม่ใช่มุม 90 องศา ข้ามไป (ไม่ควรเกิดตามสเปก PDF)
+        }
+
+        // PREPEND: แทรก cm (transform) ไว้ก่อนเนื้อหาเดิมทั้งหมด เพื่อ "หมุน" เนื้อหาดิบ
+        // ให้ตรงกับที่ viewer ซึ่ง honor /Rotate เคยแสดงผล
+        try (PDPageContentStream content = new PDPageContentStream(
+                document, page, PDPageContentStream.AppendMode.PREPEND, false, true)) {
+            content.transform(bakeMatrix);
+        }
+
+        page.setMediaBox(newBox);
+        page.setCropBox(newBox);
+        page.setRotation(0);
+    }
+
+    private void drawJsonField(PDDocument document, PDFont font, PDFont boldFont,
+            JsonObject field) throws IOException {
+        int pageNumber = jsonInt(field, "page", 1);
+        if (pageNumber < 1 || pageNumber > document.getNumberOfPages()) {
+            return;
+        }
+
+        PDPage page = document.getPage(pageNumber - 1);
+        PDRectangle box = page.getCropBox();
+        float rawWidth = box.getWidth();
+        float rawHeight = box.getHeight();
+        int rotation = ((page.getRotation() % 360) + 360) % 360;
+        float pageWidth = rotation == 90 || rotation == 270 ? rawHeight : rawWidth;
+        float pageHeight = rotation == 90 || rotation == 270 ? rawWidth : rawHeight;
+        float x = (float) (jsonDouble(field, "xRatio", 0) * pageWidth);
+        float width = Math.max(20, (float) (jsonDouble(field, "widthRatio", .4) * pageWidth));
+        float height = Math.max(20, (float) (jsonDouble(field, "heightRatio", .15) * pageHeight));
+        float top = (float) (jsonDouble(field, "yRatio", 0) * pageHeight);
+        float y = pageHeight - top - height;
+        float fontSize = Math.max(8, Math.min(72, (float) jsonDouble(field, "fontSize", 12)));
+
+        Set<String> hidden = new HashSet<>();
+        if (field.has("hiddenRows") && field.get("hiddenRows").isJsonArray()) {
+            for (JsonElement item : field.getAsJsonArray("hiddenRows")) {
+                hidden.add(item.getAsString());
+            }
+        }
+
+        try (PDPageContentStream content = new PDPageContentStream(
+                document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+            applyDisplayRotation(content, rotation, rawWidth, rawHeight);
+            PDExtendedGraphicsState previewBackground = new PDExtendedGraphicsState();
+            previewBackground.setNonStrokingAlphaConstant(.94f);
+            content.setGraphicsStateParameters(previewBackground);
+            content.setNonStrokingColor(Color.WHITE);
+            content.addRect(x, y, width, height);
+            content.fill();
+            previewBackground.setNonStrokingAlphaConstant(1f);
+            content.setGraphicsStateParameters(previewBackground);
+            content.setNonStrokingColor(Color.BLACK);
+
+            float innerX = x + 7;
+            float innerWidth = Math.max(10, width - 14);
+            float cursorTop = y + height - 5;
+
+            String approval = visibleValue(field, hidden, "approval");
+            if (!approval.isEmpty()) {
+                drawCenteredText(content, boldFont, fontSize, approval,
+                        innerX, innerWidth, cursorTop - fontSize);
+                cursorTop -= 17;
+            }
+
+            boolean hasSignatureRow = !visibleValue(field, hidden, "signText").isEmpty()
+                    || !visibleValue(field, hidden, "signatureImage").isEmpty()
+                    || !visibleValue(field, hidden, "committee").isEmpty();
+            if (!hidden.contains("signatureLine") && hasSignatureRow) {
+                float rowBottom = cursorTop - 42;
+                drawDottedLine(content, innerX, innerX + innerWidth, rowBottom);
+
+                String signText = visibleValue(field, hidden, "signText");
+                String committee = visibleValue(field, hidden, "committee");
+                float prefixWidth = signText.isEmpty() ? 0 : Math.min(42, innerWidth * .22f);
+                float committeeWidth = committee.isEmpty() ? 0 : Math.min(86, innerWidth * .38f);
+                float imageX = innerX + prefixWidth;
+                float imageWidth = Math.max(0, innerWidth - prefixWidth - committeeWidth);
+
+                if (!signText.isEmpty()) {
+                    drawCenteredText(content, font, fontSize, signText,
+                            innerX, prefixWidth, rowBottom + 3);
+                }
+                if (!committee.isEmpty()) {
+                    drawCenteredText(content, font, fontSize, committee,
+                            innerX + innerWidth - committeeWidth, committeeWidth, rowBottom + 3);
+                }
+
+                String imageData = visibleValue(field, hidden, "signatureImage");
+                if (imageWidth > 0 && imageData.startsWith("data:image/")) {
+                    drawSignatureImage(document, content, imageData, imageX, rowBottom + 2,
+                            imageWidth, 38);
+                }
+                cursorTop = rowBottom;
+            }
+
+            String[] rowKeys = {"signerName", "position", "actingForPresident", "organization", "signedDate"};
+            for (String key : rowKeys) {
+                String value = visibleValue(field, hidden, key);
+                if (value.isEmpty()) {
+                    continue;
+                }
+                float rowBottom = cursorTop - 17;
+                if (rowBottom < y) {
+                    break;
+                }
+                drawDottedLine(content, innerX, innerX + innerWidth, rowBottom);
+                drawCenteredText(content, font, fontSize, value,
+                        innerX, innerWidth, rowBottom + 2);
+                cursorTop = rowBottom;
+            }
+        }
+    }
+
+    private String visibleValue(JsonObject field, Set<String> hidden, String key) {
+        return hidden.contains(key) ? "" : jsonString(field, key);
+    }
+
+    private void drawDottedLine(PDPageContentStream content, float startX,
+            float endX, float y) throws IOException {
+        content.setStrokingColor(85, 85, 85);
+        content.setLineWidth(.45f);
+        content.setLineDashPattern(new float[]{1, 1.5f}, 0);
+        content.moveTo(startX, y);
+        content.lineTo(endX, y);
+        content.stroke();
+        content.setLineDashPattern(new float[]{}, 0);
+    }
+
+    private void drawSignatureImage(PDDocument document, PDPageContentStream content,
+            String imageData, float x, float y,
+            float areaWidth, float areaHeight) throws IOException {
+        try {
+            byte[] bytes = Base64.getDecoder().decode(imageData.substring(imageData.indexOf(',') + 1));
+            BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
+            if (bufferedImage == null) {
+                return;
+            }
+            PDImageXObject image = LosslessFactory.createFromImage(document, bufferedImage);
+            float scale = Math.min(areaWidth / image.getWidth(), areaHeight / image.getHeight());
+            float drawWidth = image.getWidth() * scale;
+            float drawHeight = image.getHeight() * scale;
+            content.drawImage(image, x + (areaWidth - drawWidth) / 2, y,
+                    drawWidth, drawHeight);
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    private void applyDisplayRotation(PDPageContentStream content, int rotation,
+            float rawWidth, float rawHeight) throws IOException {
+        switch (rotation) {
+            case 90:
+                content.transform(new Matrix(0, -1, 1, 0, 0, rawHeight));
+                break;
+            case 180:
+                content.transform(new Matrix(-1, 0, 0, -1, rawWidth, rawHeight));
+                break;
+            case 270:
+                content.transform(new Matrix(0, 1, -1, 0, rawWidth, 0));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void drawCenteredText(PDPageContentStream content, PDFont font, float size,
+            String text, float x, float width, float y) throws IOException {
+        String safeText = sanitizeForFont(font, text);
+        if (safeText.isEmpty()) {
+            return;
+        }
+        float textWidth = font.getStringWidth(safeText) / 1000f * size;
+        content.beginText();
+        content.setFont(font, size);
+        content.newLineAtOffset(x + Math.max(2, (width - textWidth) / 2), y);
+        content.showText(safeText);
+        content.endText();
+    }
+
+    // ตัดอักขระควบคุม (control char เช่น U+0087 ที่มักติดมาจากการ copy-paste จาก Word/Excel)
+    // และแทนที่อักขระใด ๆ ที่ฟอนต์ไม่มี glyph ด้วยช่องว่าง กัน PDF สร้างไม่สำเร็จทั้งฉบับ
+    // เพราะมีตัวอักษรแปลกปลอมเพียงตัวเดียวในข้อมูล
+    private String sanitizeForFont(PDFont font, String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (Character.isISOControl(c)) {
+                continue;
+            }
+            try {
+                font.encode(String.valueOf(c));
+                sb.append(c);
+            } catch (Exception unsupported) {
+                sb.append(' ');
+            }
+        }
+        return sb.toString().trim();
+    }
+
+    private JsonArray jsonArray(JsonObject object, String... keys) {
+        for (String key : keys) {
+            if (object.has(key) && object.get(key).isJsonArray()) {
+                return object.getAsJsonArray(key);
+            }
+        }
+        return null;
+    }
+
+    private String jsonString(JsonObject object, String... keys) {
+        for (String key : keys) {
+            if (object.has(key) && !object.get(key).isJsonNull()) {
+                try {
+                    return object.get(key).getAsString();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return "";
+    }
+
+    private int jsonInt(JsonObject object, String key, int defaultValue) {
+        try {
+            return object.get(key).getAsInt();
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private double jsonDouble(JsonObject object, String key, double defaultValue) {
+        try {
+            return object.get(key).getAsDouble();
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private String sanitizeDownloadName(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
     // ---------- Serve current template ----------
     private void handleServeTemplate(HttpServletResponse resp) throws IOException {
         File f = new File(UPLOAD_DIR + TEMPLATE_NAME);
-        if (!f.exists()) { resp.sendError(404, "ยังไม่มี template"); return; }
+        if (!f.exists()) {
+            resp.sendError(404, "ยังไม่มี template");
+            return;
+        }
         resp.setContentType("application/pdf");
         resp.setHeader("Cache-Control", "no-store");
         try (OutputStream os = resp.getOutputStream(); InputStream is = new FileInputStream(f)) {
-            byte[] buf = new byte[8192]; int r;
-            while ((r = is.read(buf)) != -1) os.write(buf, 0, r);
+            byte[] buf = new byte[8192];
+            int r;
+            while ((r = is.read(buf)) != -1) {
+                os.write(buf, 0, r);
+            }
         }
     }
 
@@ -155,17 +630,25 @@ public class PdfManagerServlet extends HttpServlet {
     // ---------- ฟังก์ชันจัดการ Bookmark หลังลบหน้า ----------
     private void updateBookmarksAfterDelete(PDDocument doc, int deletedIndex) throws IOException {
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
-        if (outline == null) return;
+        if (outline == null) {
+            return;
+        }
 
         traverseAndAdjust(outline, item -> {
             PDPageDestination dest = resolveDestination(item);
-            if (dest == null) return;
+            if (dest == null) {
+                return;
+            }
 
             // หากบุ๊กมาร์กอ้างอิงเป็น Object หน้าตรง ๆ (ไม่ระบุเป็นเลขหน้า) ข้ามไปได้เพราะระบบจัดการอ้างอิงให้แล้ว
-            if (dest.getPage() != null) return; 
+            if (dest.getPage() != null) {
+                return;
+            }
 
             int pn = dest.getPageNumber();
-            if (pn < 0) return;
+            if (pn < 0) {
+                return;
+            }
 
             if (pn == deletedIndex) {
                 // หากหน้าปลายทางถูกลบ ให้ชี้ไปที่หน้าก่อนหน้า หรือหน้าแรกสุดแทน
@@ -183,11 +666,17 @@ public class PdfManagerServlet extends HttpServlet {
     private void handleUploadTemplate(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
         Part filePart = req.getPart("templatePdf");
-        if (filePart == null || filePart.getSize() == 0) { resp.sendError(400, "ไม่พบไฟล์ templatePdf"); return; }
+        if (filePart == null || filePart.getSize() == 0) {
+            resp.sendError(400, "ไม่พบไฟล์ templatePdf");
+            return;
+        }
         File dest = new File(UPLOAD_DIR + TEMPLATE_NAME);
         try (InputStream in = filePart.getInputStream(); OutputStream out = new FileOutputStream(dest)) {
-            byte[] buf = new byte[8192]; int r;
-            while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
+            byte[] buf = new byte[8192];
+            int r;
+            while ((r = in.read(buf)) != -1) {
+                out.write(buf, 0, r);
+            }
         }
         resp.setContentType("text/plain; charset=UTF-8");
         resp.getWriter().write("OK");
@@ -196,22 +685,25 @@ public class PdfManagerServlet extends HttpServlet {
     // ---------- List bookmarks ----------
     private void handleListBookmarks(HttpServletResponse resp) throws IOException {
         File f = new File(UPLOAD_DIR + TEMPLATE_NAME);
-        List<Map<String,Object>> results = new ArrayList<>();
+        List<Map<String, Object>> results = new ArrayList<>();
         if (f.exists()) {
             try (PDDocument doc = PDDocument.load(f)) {
                 PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
-                if (outline != null) iterateBookmarks(doc, outline, results, 0);
-            } catch (Exception ignored) {}
+                if (outline != null) {
+                    iterateBookmarks(doc, outline, results, 0);
+                }
+            } catch (Exception ignored) {
+            }
         }
         resp.setContentType("application/json; charset=UTF-8");
         resp.getWriter().write(toJson(results));
     }
 
     private void iterateBookmarks(PDDocument doc, PDOutlineNode node,
-                                  List<Map<String,Object>> results, int level) throws IOException {
+            List<Map<String, Object>> results, int level) throws IOException {
         PDOutlineItem item = node.getFirstChild();
         while (item != null) {
-            Map<String,Object> m = new LinkedHashMap<>();
+            Map<String, Object> m = new LinkedHashMap<>();
             m.put("title", item.getTitle());
             m.put("level", level);
             int pageIndex = resolvePageIndex(doc, item.getDestination());
@@ -222,7 +714,9 @@ public class PdfManagerServlet extends HttpServlet {
             m.put("pageIndex", pageIndex);
             results.add(m);
 
-            if (item.hasChildren()) iterateBookmarks(doc, item, results, level + 1);
+            if (item.hasChildren()) {
+                iterateBookmarks(doc, item, results, level + 1);
+            }
             item = item.getNextSibling();
         }
     }
@@ -231,9 +725,13 @@ public class PdfManagerServlet extends HttpServlet {
         if (dest instanceof PDPageDestination) {
             PDPageDestination d = (PDPageDestination) dest;
             PDPage page = d.getPage();
-            if (page != null) return doc.getPages().indexOf(page);
+            if (page != null) {
+                return doc.getPages().indexOf(page);
+            }
             int pn = d.getPageNumber();
-            if (pn >= 0) return pn;
+            if (pn >= 0) {
+                return pn;
+            }
         }
         return -1;
     }
@@ -241,7 +739,9 @@ public class PdfManagerServlet extends HttpServlet {
     private PDPageDestination resolveActionDestination(org.apache.pdfbox.pdmodel.interactive.action.PDAction action) throws IOException {
         if (action instanceof org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo) {
             PDDestination d = ((org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo) action).getDestination();
-            if (d instanceof PDPageDestination) return (PDPageDestination) d;
+            if (d instanceof PDPageDestination) {
+                return (PDPageDestination) d;
+            }
         }
         return null;
     }
@@ -249,10 +749,10 @@ public class PdfManagerServlet extends HttpServlet {
     // ---------- List server files ----------
     private void handleServerFiles(HttpServletResponse resp) throws IOException {
         File dir = new File(UPLOAD_DIR);
-        String[] list = dir.list((d, name) ->
-                name.toLowerCase().endsWith(".pdf") && !name.equals(TEMPLATE_NAME));
+        String[] list = dir.list((d, name)
+                -> name.toLowerCase().endsWith(".pdf") && !name.equals(TEMPLATE_NAME));
         List<String> files = list == null ? Collections.emptyList()
-                                          : Arrays.stream(list).sorted().collect(Collectors.toList());
+                : Arrays.stream(list).sorted().collect(Collectors.toList());
         resp.setContentType("application/json; charset=UTF-8");
         resp.getWriter().write(toJson(files));
     }
@@ -262,39 +762,54 @@ public class PdfManagerServlet extends HttpServlet {
             throws IOException, ServletException {
         String actionType = req.getParameter("actionType");
         int pageNumber;
-        try { pageNumber = Integer.parseInt(req.getParameter("pageNumber")); }
-        catch (Exception e) { writeJsonError(resp, 400, "pageNumber ไม่ถูกต้อง"); return; }
+        try {
+            pageNumber = Integer.parseInt(req.getParameter("pageNumber"));
+        } catch (Exception e) {
+            writeJsonError(resp, 400, "pageNumber ไม่ถูกต้อง");
+            return;
+        }
 
         int replaceCount = 1;
         if ("replaceRange".equals(actionType)) {
-            try { replaceCount = Math.max(1, Integer.parseInt(req.getParameter("replaceCount"))); }
-            catch (Exception ignore) { replaceCount = 1; }
+            try {
+                replaceCount = Math.max(1, Integer.parseInt(req.getParameter("replaceCount")));
+            } catch (Exception ignore) {
+                replaceCount = 1;
+            }
         }
 
-        if (!( "insert".equals(actionType) || "replace".equals(actionType) || "replaceRange".equals(actionType) )) {
-            writeJsonError(resp, 400, "actionType ต้องเป็น insert/replace/replaceRange"); return;
+        if (!("insert".equals(actionType) || "replace".equals(actionType) || "replaceRange".equals(actionType))) {
+            writeJsonError(resp, 400, "actionType ต้องเป็น insert/replace/replaceRange");
+            return;
         }
 
         File templateFile = new File(UPLOAD_DIR + TEMPLATE_NAME);
-        if (!templateFile.exists()) { writeJsonError(resp, 400, "ยังไม่มี template"); return; }
+        if (!templateFile.exists()) {
+            writeJsonError(resp, 400, "ยังไม่มี template");
+            return;
+        }
 
         Part newPdfPart = null;
-        try { newPdfPart = req.getPart("newPdf"); } catch (IllegalStateException ignore) {}
+        try {
+            newPdfPart = req.getPart("newPdf");
+        } catch (IllegalStateException ignore) {
+        }
         String serverFile = req.getParameter("serverFile");
         File newPdfFile = resolveNewPdfFile(newPdfPart, serverFile);
         if (newPdfFile == null || !newPdfFile.exists()) {
-            writeJsonError(resp, 400, "ไม่พบไฟล์สำหรับแทรก/แทนที่"); return;
+            writeJsonError(resp, 400, "ไม่พบไฟล์สำหรับแทรก/แทนที่");
+            return;
         }
 
-        try (PDDocument templateDoc = PDDocument.load(templateFile);
-             PDDocument sourceDoc = PDDocument.load(newPdfFile)) {
+        try (PDDocument templateDoc = PDDocument.load(templateFile); PDDocument sourceDoc = PDDocument.load(newPdfFile)) {
 
             PDPageTree pages = templateDoc.getPages();
             int pageCount = pages.getCount();
 
             if ("insert".equals(actionType)) {
                 if (pageNumber < 1 || pageNumber > pageCount + 1) {
-                    writeJsonError(resp, 400, "หมายเลขหน้าต้องอยู่ในช่วง 1.." + (pageCount + 1)); return;
+                    writeJsonError(resp, 400, "หมายเลขหน้าต้องอยู่ในช่วง 1.." + (pageCount + 1));
+                    return;
                 }
                 int targetIndex = pageNumber - 1;
                 int insertedCount = sourceDoc.getNumberOfPages();
@@ -303,7 +818,8 @@ public class PdfManagerServlet extends HttpServlet {
 
             } else if ("replace".equals(actionType)) {
                 if (pageNumber < 1 || pageNumber > pageCount) {
-                    writeJsonError(resp, 400, "หมายเลขหน้าต้องอยู่ในช่วง 1.." + pageCount); return;
+                    writeJsonError(resp, 400, "หมายเลขหน้าต้องอยู่ในช่วง 1.." + pageCount);
+                    return;
                 }
                 int targetIndex = pageNumber - 1;
                 int insertedCount = sourceDoc.getNumberOfPages();
@@ -316,10 +832,12 @@ public class PdfManagerServlet extends HttpServlet {
 
             } else { // replaceRange
                 if (pageNumber < 1 || pageNumber > pageCount) {
-                    writeJsonError(resp, 400, "หมายเลขหน้าเริ่มต้นต้องอยู่ในช่วง 1.." + pageCount); return;
+                    writeJsonError(resp, 400, "หมายเลขหน้าเริ่มต้นต้องอยู่ในช่วง 1.." + pageCount);
+                    return;
                 }
                 if (replaceCount < 1 || pageNumber - 1 + replaceCount > pageCount) {
-                    writeJsonError(resp, 400, "ช่วงหน้าที่จะแทนที่เกินขอบเขตเอกสาร"); return;
+                    writeJsonError(resp, 400, "ช่วงหน้าที่จะแทนที่เกินขอบเขตเอกสาร");
+                    return;
                 }
                 int startIndex = pageNumber - 1;
                 int insertedCount = sourceDoc.getNumberOfPages();
@@ -331,14 +849,14 @@ public class PdfManagerServlet extends HttpServlet {
             templateDoc.save(templateFile);
         } catch (Exception e) {
             e.printStackTrace();
-            writeJsonError(resp, 500, "ผิดพลาด: " + e.getMessage()); return;
+            writeJsonError(resp, 500, "ผิดพลาด: " + e.getMessage());
+            return;
         }
 
         writeJson(resp, 200, Collections.singletonMap("message", "อัปเดตสำเร็จ"));
     }
 
     // ---------- Insert / Replace helpers ----------
-
     private PDPage insertPages(PDDocument target, PDDocument source, int targetIndex) throws IOException {
         PDPageTree pages = target.getPages();
         int pageCount = pages.getCount();
@@ -347,7 +865,9 @@ public class PdfManagerServlet extends HttpServlet {
         if (targetIndex >= pageCount) {
             for (int i = 0; i < source.getNumberOfPages(); i++) {
                 PDPage imported = target.importPage(source.getPage(i));
-                if (firstInserted == null) firstInserted = imported;
+                if (firstInserted == null) {
+                    firstInserted = imported;
+                }
             }
             return firstInserted;
         }
@@ -356,7 +876,9 @@ public class PdfManagerServlet extends HttpServlet {
         for (int i = 0; i < source.getNumberOfPages(); i++) {
             PDPage imported = target.importPage(source.getPage(i));
             pages.insertBefore(imported, ref);
-            if (firstInserted == null) firstInserted = imported;
+            if (firstInserted == null) {
+                firstInserted = imported;
+            }
         }
         return firstInserted;
     }
@@ -369,13 +891,20 @@ public class PdfManagerServlet extends HttpServlet {
         for (int i = 0; i < source.getNumberOfPages(); i++) {
             PDPage imported = target.importPage(source.getPage(i));
             pages.insertBefore(imported, ref);
-            if (firstInserted == null) firstInserted = imported;
+            if (firstInserted == null) {
+                firstInserted = imported;
+            }
         }
         pages.remove(ref);
         return firstInserted;
     }
 
-    private static class ReplaceRangeResult { PDPage firstInserted; List<PDPage> removedPages; }
+    private static class ReplaceRangeResult {
+
+        PDPage firstInserted;
+        List<PDPage> removedPages;
+    }
+
     private ReplaceRangeResult replaceRange(PDDocument target, PDDocument source, int startIndex, int replaceCount) throws IOException {
         ReplaceRangeResult res = new ReplaceRangeResult();
         res.removedPages = new ArrayList<>();
@@ -389,22 +918,31 @@ public class PdfManagerServlet extends HttpServlet {
         for (int i = 0; i < source.getNumberOfPages(); i++) {
             PDPage imported = target.importPage(source.getPage(i));
             pages.insertBefore(imported, ref);
-            if (res.firstInserted == null) res.firstInserted = imported;
+            if (res.firstInserted == null) {
+                res.firstInserted = imported;
+            }
         }
 
-        for (PDPage p : res.removedPages) pages.remove(p);
+        for (PDPage p : res.removedPages) {
+            pages.remove(p);
+        }
         return res;
     }
 
     // ---------- Bookmark updates (Insert/Replace) ----------
-
     private void updateBookmarksAfterInsert(PDDocument doc, int targetIndex, int insertedCount) throws IOException {
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
-        if (outline == null || insertedCount == 0) return;
+        if (outline == null || insertedCount == 0) {
+            return;
+        }
         traverseAndAdjust(outline, item -> {
             PDPageDestination dest = resolveDestination(item);
-            if (dest == null) return;
-            if (dest.getPage() != null) return;
+            if (dest == null) {
+                return;
+            }
+            if (dest.getPage() != null) {
+                return;
+            }
             int pn = dest.getPageNumber();
             if (pn >= 0 && pn >= targetIndex) {
                 dest.setPageNumber(pn + insertedCount);
@@ -415,12 +953,16 @@ public class PdfManagerServlet extends HttpServlet {
 
     private void updateBookmarksAfterReplaceOne(PDDocument doc, int targetIndex, PDPage removedPage, PDPage firstInserted, int insertedCount) throws IOException {
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
-        if (outline == null) return;
+        if (outline == null) {
+            return;
+        }
         final int delta = insertedCount - 1;
 
         traverseAndAdjust(outline, item -> {
             PDPageDestination dest = resolveDestination(item);
-            if (dest == null) return;
+            if (dest == null) {
+                return;
+            }
 
             PDPage pageRef = dest.getPage();
             if (pageRef != null) {
@@ -432,11 +974,16 @@ public class PdfManagerServlet extends HttpServlet {
             }
 
             int pn = dest.getPageNumber();
-            if (pn < 0) return;
+            if (pn < 0) {
+                return;
+            }
 
             if (pn == targetIndex) {
-                if (firstInserted != null) dest.setPage(firstInserted);
-                else dest.setPageNumber(targetIndex);
+                if (firstInserted != null) {
+                    dest.setPage(firstInserted);
+                } else {
+                    dest.setPageNumber(targetIndex);
+                }
                 item.setDestination(dest);
             } else if (pn > targetIndex && delta != 0) {
                 dest.setPageNumber(pn + delta);
@@ -447,21 +994,32 @@ public class PdfManagerServlet extends HttpServlet {
 
     private void updateBookmarksAfterReplaceRange(PDDocument doc, int startIndex, int replaceCount, PDPage firstInserted, int insertedCount) throws IOException {
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
-        if (outline == null) return;
+        if (outline == null) {
+            return;
+        }
         final int endIndex = startIndex + replaceCount - 1;
         final int delta = insertedCount - replaceCount;
 
         traverseAndAdjust(outline, item -> {
             PDPageDestination dest = resolveDestination(item);
-            if (dest == null) return;
-            if (dest.getPage() != null) return;
+            if (dest == null) {
+                return;
+            }
+            if (dest.getPage() != null) {
+                return;
+            }
 
             int pn = dest.getPageNumber();
-            if (pn < 0) return;
+            if (pn < 0) {
+                return;
+            }
 
             if (pn >= startIndex && pn <= endIndex) {
-                if (firstInserted != null) dest.setPage(firstInserted);
-                else dest.setPageNumber(startIndex);
+                if (firstInserted != null) {
+                    dest.setPage(firstInserted);
+                } else {
+                    dest.setPageNumber(startIndex);
+                }
                 item.setDestination(dest);
             } else if (pn > endIndex && delta != 0) {
                 dest.setPageNumber(pn + delta);
@@ -471,43 +1029,55 @@ public class PdfManagerServlet extends HttpServlet {
     }
 
     // ---------- Bookmark traversal utils ----------
+    private interface ItemVisitor {
 
-    private interface ItemVisitor { void visit(PDOutlineItem item) throws IOException; }
+        void visit(PDOutlineItem item) throws IOException;
+    }
 
     private void traverseAndAdjust(PDOutlineNode node, ItemVisitor visitor) throws IOException {
         PDOutlineItem it = node.getFirstChild();
         while (it != null) {
             visitor.visit(it);
-            if (it.hasChildren()) traverseAndAdjust(it, visitor);
+            if (it.hasChildren()) {
+                traverseAndAdjust(it, visitor);
+            }
             it = it.getNextSibling();
         }
     }
 
     private PDPageDestination resolveDestination(PDOutlineItem item) throws IOException {
         PDDestination d = item.getDestination();
-        if (d instanceof PDPageDestination) return (PDPageDestination) d;
+        if (d instanceof PDPageDestination) {
+            return (PDPageDestination) d;
+        }
         if (item.getAction() instanceof org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo) {
             PDDestination d2 = ((org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo) item.getAction()).getDestination();
-            if (d2 instanceof PDPageDestination) return (PDPageDestination) d2;
+            if (d2 instanceof PDPageDestination) {
+                return (PDPageDestination) d2;
+            }
         }
         return null;
     }
 
     // ---------- Helpers ----------
-
     private File resolveNewPdfFile(Part uploadPart, String serverFileName) throws IOException {
         if (uploadPart != null && uploadPart.getSize() > 0) {
             File tmp = new File(UPLOAD_DIR, "incoming_" + System.currentTimeMillis() + ".pdf");
             try (InputStream in = uploadPart.getInputStream(); OutputStream out = new FileOutputStream(tmp)) {
-                byte[] buf = new byte[8192]; int r;
-                while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
+                byte[] buf = new byte[8192];
+                int r;
+                while ((r = in.read(buf)) != -1) {
+                    out.write(buf, 0, r);
+                }
             }
             return tmp;
         }
         if (serverFileName != null && !serverFileName.isEmpty()) {
             String safe = serverFileName.replaceAll("[\\\\/]+", "");
             File f = new File(UPLOAD_DIR, safe);
-            if (f.exists() && f.getName().toLowerCase().endsWith(".pdf")) return f;
+            if (f.exists() && f.getName().toLowerCase().endsWith(".pdf")) {
+                return f;
+            }
         }
         return null;
     }
@@ -526,9 +1096,15 @@ public class PdfManagerServlet extends HttpServlet {
     }
 
     private String toJson(Object o) {
-        if (o == null) return "null";
-        if (o instanceof String) return "\"" + escape((String) o) + "\"";
-        if (o instanceof Number || o instanceof Boolean) return String.valueOf(o);
+        if (o == null) {
+            return "null";
+        }
+        if (o instanceof String) {
+            return "\"" + escape((String) o) + "\"";
+        }
+        if (o instanceof Number || o instanceof Boolean) {
+            return String.valueOf(o);
+        }
         if (o instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> m = (Map<String, Object>) o;

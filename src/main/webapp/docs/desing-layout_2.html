@@ -697,30 +697,30 @@
                 function renderBookmarkList() {
                     bookmarkList.innerHTML = '';
                     bookmarks
-                       .slice()
-                       .sort((a, b) => a.page - b.page)
-                       .forEach(bookmark => {
-                           const item = document.createElement('li');
-                           item.className = 'bookmark-item';
-                           const label = document.createElement('span');
-                           label.textContent = `${bookmark.name} · หน้า ${bookmark.page}`;
-                           label.title = 'คลิกเพื่อไปยังหน้านี้';
-                           label.style.cursor = 'pointer';
-                           label.addEventListener('click', () => showPage(bookmark.page));
-                           const removeBtn = document.createElement('button');
-                           removeBtn.type = 'button';
-                           removeBtn.textContent = '×';
-                           removeBtn.title = `ลบจุดคั่นหน้า ${bookmark.name}`;
-                           removeBtn.addEventListener('click', () => {
-                               const index = bookmarks.findIndex(candidate => candidate.id === bookmark.id);
-                               if (index !== -1)
-                                   bookmarks.splice(index, 1);
-                               renderBookmarkList();
-                           });
-                           item.appendChild(label);
-                           item.appendChild(removeBtn);
-                           bookmarkList.appendChild(item);
-                       });
+                        .slice()
+                        .sort((a, b) => a.page - b.page)
+                        .forEach(bookmark => {
+                            const item = document.createElement('li');
+                            item.className = 'bookmark-item';
+                            const label = document.createElement('span');
+                            label.textContent = `${bookmark.name} · หน้า ${bookmark.page}`;
+                            label.title = 'คลิกเพื่อไปยังหน้านี้';
+                            label.style.cursor = 'pointer';
+                            label.addEventListener('click', () => showPage(bookmark.page));
+                            const removeBtn = document.createElement('button');
+                            removeBtn.type = 'button';
+                            removeBtn.textContent = '×';
+                            removeBtn.title = `ลบจุดคั่นหน้า ${bookmark.name}`;
+                            removeBtn.addEventListener('click', () => {
+                                const index = bookmarks.findIndex(candidate => candidate.id === bookmark.id);
+                                if (index !== -1)
+                                    bookmarks.splice(index, 1);
+                                renderBookmarkList();
+                            });
+                            item.appendChild(label);
+                            item.appendChild(removeBtn);
+                            bookmarkList.appendChild(item);
+                        });
                 }
 
                 function addBookmark() {
@@ -992,9 +992,9 @@
                         documentRoles: activeRoles().map(role => ({id: role.id, order: role.order, name: role.name})),
                         participants: participants.map(person => ({id: person.id, name: person.name})),
                         bookmarks: bookmarks
-                           .slice()
-                           .sort((a, b) => a.page - b.page)
-                           .map(bookmark => ({name: bookmark.name, page: bookmark.page})),
+                            .slice()
+                            .sort((a, b) => a.page - b.page)
+                            .map(bookmark => ({name: bookmark.name, page: bookmark.page})),
                         assignments: fields.map(field => ({
                                 fieldId: field.id,
                                 workflowId: field.workflowId,

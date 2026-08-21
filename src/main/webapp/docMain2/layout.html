@@ -144,6 +144,22 @@
             .participant-editor button{
                 margin-top:6px
             }
+            .template-actions{
+                display:flex;
+                gap:6px
+            }
+            .template-actions button{
+                width:auto;
+                flex:1
+            }
+            .template-select-row{
+                display:flex;
+                gap:6px;
+                align-items:center
+            }
+            .template-select-row select{
+                flex:1
+            }
             .participant-list{
                 margin:7px 0 0;
                 padding-left:20px;
@@ -151,29 +167,120 @@
                 font-size:12px
             }
             .bookmark-item{
-                display:flex;
-                justify-content:space-between;
+                display:grid;
+                grid-template-columns:1fr auto;
                 align-items:center;
-                gap:6px;
+                gap:8px;
                 list-style:none;
-                margin:0 0 4px;
-                padding:5px 7px;
-                border:1px solid var(--edge);
-                border-radius:6px;
-                background:white
+                margin:0 0 6px;
+                padding:8px 8px 8px 10px;
+                border:1px solid #e7dfd0;
+                border-left:3px solid var(--gold);
+                border-radius:8px;
+                background:#fff;
+                box-shadow:0 1px 3px #1b2a410d;
+                transition:border-color .15s,transform .15s,box-shadow .15s
+            }
+            .bookmark-item:hover{
+                border-color:#cdbb9c;
+                transform:translateY(-1px);
+                box-shadow:0 4px 10px #1b2a4114
+            }
+            .bookmark-link{
+                min-width:0;
+                overflow:hidden;
+                color:var(--ink);
+                font-size:12px;
+                font-weight:600;
+                text-overflow:ellipsis;
+                white-space:nowrap
             }
             .bookmark-item button{
                 flex:0 0 auto;
-                padding:1px 6px;
-                border:0;
-                border-radius:4px;
-                background:none;
+                width:24px;
+                height:24px;
+                padding:0;
+                border:1px solid transparent;
+                border-radius:6px;
+                background:#f8eee9;
                 color:var(--danger);
-                font:700 12px sans-serif
+                font:700 14px/1 sans-serif
+            }
+            .bookmark-item button:hover{
+                border-color:#e8c8bd;
+                background:#f2ddd5
             }
             #bookmarkList{
                 padding-left:0;
-                margin-top:8px
+                margin:10px 0 0;
+                max-height:220px;
+                overflow:auto;
+                scrollbar-width:thin;
+                scrollbar-color:#cdbb9c transparent
+            }
+            .bookmark-panel{
+                padding:12px!important;
+                border:1px solid #dbc9aa!important;
+                border-radius:10px;
+                background:linear-gradient(180deg,#fffdf8 0%,#f8f2e8 100%)
+            }
+            .bookmark-heading{
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:8px;
+                margin-bottom:10px
+            }
+            .bookmark-heading h3{
+                display:flex;
+                align-items:center;
+                gap:6px;
+                margin:0
+            }
+            .bookmark-heading h3::before{
+                content:"🔖";
+                font-size:15px
+            }
+            .bookmark-count{
+                min-width:26px;
+                padding:2px 7px;
+                border-radius:999px;
+                background:var(--ink);
+                color:white;
+                text-align:center;
+                font:700 11px sans-serif
+            }
+            .bookmark-fields{
+                display:grid;
+                grid-template-columns:minmax(0,1fr) 62px;
+                gap:7px
+            }
+            .bookmark-field label{
+                margin-top:0!important
+            }
+            .bookmark-add{
+                width:100%!important;
+                margin-top:8px!important;
+                border-color:var(--gold)!important;
+                background:var(--gold)!important;
+                color:white!important
+            }
+            .bookmark-add:hover{
+                filter:brightness(.94)
+            }
+            .bookmark-empty{
+                padding:14px 8px;
+                border:1px dashed #cfbea0;
+                border-radius:8px;
+                color:#7c6e59;
+                text-align:center;
+                font-size:12px;
+                line-height:1.5
+            }
+            .bookmark-help{
+                margin-top:8px!important;
+                padding-top:8px;
+                border-top:1px solid #e7dcc8
             }
             .role-checklist{
                 display:grid;
@@ -303,7 +410,7 @@
                 color:var(--ink);
                 text-align:center;
                 font-family:"TH Sarabun",sans-serif;
-                font-size:var(--block-font-size,12pt);
+                font-size:var(--block-font-size,16pt);
                 line-height:.8;
                 user-select:text
             }
@@ -362,7 +469,7 @@
                 border:0;
                 border-radius:0;
                 color:#8a8175;
-                font:12pt "TH Sarabun",sans-serif;
+                font:16pt "TH Sarabun",sans-serif;
                 cursor:pointer
             }
             .sig-upload img{
@@ -466,17 +573,21 @@
     </head>
     <body>
         <main class="app" id="app">
-            <header class="header"><div><h1>จัดวางบล็อกผู้เกี่ยวข้องในเอกสาร</h1><p>กำหนด role เลือกผู้ทำหน้าที่ และวางบล็อกบน PDF ตามหน้าที่ต้องการ</p></div></header>
+            <!--<header class="header"><div><h1>จัดวางบล็อกผู้เกี่ยวข้องในเอกสาร</h1><p>กำหนด role เลือกผู้ทำหน้าที่ และวางบล็อกบน PDF ตามหน้าที่ต้องการ</p></div></header>-->
             <nav class="toolbar">
                 <label class="upload primary">อัปโหลด PDF ก่อนวาง<input id="pdfInput" type="file" accept="application/pdf"></label>
                 <button class="primary" id="exportBtn">ส่งออก JSON สำหรับ PDFBox</button>
                 <label class="upload">โหลด JSON PDFBox<input id="jsonInput" type="file" accept="application/json,.json"></label>
+                <input id="docIdInput" type="text" placeholder="Document ID / Path บนเซิร์ฟเวอร์" style="padding:9px 10px;border:1px solid var(--edge);border-radius:8px;font:13px inherit;min-width:200px">
+                <button class="primary" id="generatePdfBtn">🖨 สร้าง PDF ด้วยข้อมูลที่บันทึกไว้</button>
                 <button id="previewBtn">ดูตัวอย่างจริง</button>
                 <button class="danger" id="clearBtn">ล้างทั้งหมด</button>
                 <div class="page-nav"><button id="prevPageBtn" disabled>◀ หน้าก่อน</button><span class="page-counter" id="pageCounter">หน้า 0 / 0</span><button id="nextPageBtn" disabled>หน้าถัดไป ▶</button></div>
             </nav>
             <section class="workspace">
-                <aside class="side"><h2>บล็อกผู้เกี่ยวข้อง</h2><ol><li>เลือก WF</li><li>ติ๊กบทบาทที่เกี่ยวข้องในเอกสารชุดนี้</li><li>เลือกบทบาทและคนที่ทำหน้าที่ให้แต่ละบล็อก</li><li>กำหนด action ตรวจสอบ/ลงนาม/อนุมัติ</li></ol><div class="participant-editor"><h3>รายชื่อผู้เกี่ยวข้องในเอกสาร</h3><input id="participantName" type="text" placeholder="ชื่อ-นามสกุล"><button id="participantAddBtn" type="button">+ เพิ่มรายชื่อ</button><ol class="participant-list" id="participantList"></ol></div><div class="participant-editor"><h3>บทบาทที่เกี่ยวข้องในเอกสารชุดนี้</h3><div class="role-checklist" id="documentRoleList"></div><small>ระบบจะ run ตามลำดับ 1-8 ตามรายการที่ติ๊กไว้</small></div><div class="participant-editor"><h3>จุดคั่นหน้า (Bookmark)</h3><label for="bookmarkName">ชื่อจุดคั่นหน้า</label><input id="bookmarkName" type="text" placeholder="เช่น หน้าลงนามคณบดี"><label for="bookmarkPage">หน้าที่</label><input id="bookmarkPage" type="number" min="1" value="1"><button id="bookmarkAddBtn" type="button">+ เพิ่มจุดคั่นหน้า</button><ol class="participant-list" id="bookmarkList"></ol><small>จุดคั่นหน้าจะถูกส่งออกเป็น PDF outline/bookmark สำหรับ PDFBox</small></div><div class="participant-editor"><h3>ค่าเริ่มต้นตอนเพิ่มบล็อก</h3><label for="defaultWorkflowSelect">WF</label><select id="defaultWorkflowSelect"></select><label for="defaultRoleSelect">บทบาท (role)</label><select id="defaultRoleSelect"></select><label for="defaultAssigneeSelect">คนที่ทำหน้าที่</label><select id="defaultAssigneeSelect"></select></div><div class="participant-editor"><h3>แก้บล็อกที่เลือก</h3><label for="selectedWorkflowSelect">WF</label><select id="selectedWorkflowSelect" disabled></select><label for="selectedRoleSelect">บทบาท (role)</label><select id="selectedRoleSelect" disabled></select><label for="selectedAssigneeSelect">คนที่ทำหน้าที่</label><select id="selectedAssigneeSelect" disabled></select><label>Action</label><div class="action-options"><label><input id="actionReview" type="checkbox" disabled>ตรวจสอบ</label><label><input id="actionSign" type="checkbox" disabled>ลงนาม</label><label><input id="actionApprove" type="checkbox" disabled>อนุมัติ</label></div><small id="selectedBlockInfo">ยังไม่ได้เลือกบล็อก</small></div><button id="addBtn" disabled>+ เพิ่มบล็อกผู้เกี่ยวข้อง</button><small>WF, role, คนที่ทำหน้าที่ และ action จะถูกเก็บใน JSON แต่ไม่แสดงในบล็อกเอกสาร</small></aside>
+                <aside class="side">
+                    <!-- <h2>บล็อกผู้เกี่ยวข้อง</h2><ol><li>เลือก WF</li><li>ติ๊กบทบาทที่เกี่ยวข้องในเอกสารชุดนี้</li><li>เลือกบทบาทและคนที่ทำหน้าที่ให้แต่ละบล็อก</li><li>กำหนด action ตรวจสอบ/ลงนาม/อนุมัติ</li></ol>-->
+                    <div class="participant-editor"><h3>รายชื่อผู้เกี่ยวข้องในเอกสาร</h3><input id="participantName" type="text" placeholder="ชื่อ-นามสกุล"><button id="participantAddBtn" type="button">+ เพิ่มรายชื่อ</button><ol class="participant-list" id="participantList"></ol></div><div class="participant-editor"><h3>บทบาทที่เกี่ยวข้องในเอกสารชุดนี้</h3><div class="role-checklist" id="documentRoleList"></div><small>ระบบจะ run ตามลำดับ 1-8 ตามรายการที่ติ๊กไว้</small></div><div class="participant-editor bookmark-panel"><div class="bookmark-heading"><h3>จุดคั่นหน้า</h3><span class="bookmark-count" id="bookmarkCount">0</span></div><div class="bookmark-fields"><div class="bookmark-field"><label for="bookmarkName">ชื่อ Bookmark</label><input id="bookmarkName" type="text" placeholder="เช่น หน้าลงนามคณบดี"></div><div class="bookmark-field"><label for="bookmarkPage">หน้า</label><input id="bookmarkPage" type="number" min="1" value="1"></div></div><button class="bookmark-add" id="bookmarkAddBtn" type="button">+ เพิ่ม Bookmark</button><ol id="bookmarkList"></ol><small class="bookmark-help">Bookmark จาก PDF จะโหลดอัตโนมัติ คลิกชื่อเพื่อไปยังหน้า หรือลบรายการที่ไม่ต้องการได้</small></div><div class="participant-editor"><h3>Template ผัง (บันทึกไว้ใช้ซ้ำ)</h3><label for="templateName">ชื่อ Template</label><input id="templateName" type="text" placeholder="เช่น สัญญา - คณะ ABC"><button id="templateSaveBtn" type="button">💾 บันทึกเป็น Template</button><label for="templateSelect">Template ที่บันทึกไว้</label><div class="template-select-row"><select id="templateSelect"><option value="">— เลือก Template —</option></select></div><div class="template-actions"><button id="templateLoadBtn" type="button">📂 โหลด</button><button id="templateDeleteBtn" type="button" class="danger">🗑 ลบ</button></div><small id="templateInfo">Template เก็บ WF/role/ผู้เกี่ยวข้อง/bookmark/ตำแหน่งบล็อกทั้งหมดไว้ใน browser นี้ (localStorage) เพื่อโหลดมาใช้กับเอกสารชุดใหม่ได้อีก</small></div><div class="participant-editor"><h3>ค่าเริ่มต้นตอนเพิ่มบล็อก</h3><label for="defaultWorkflowSelect">WF</label><select id="defaultWorkflowSelect"></select><label for="defaultRoleSelect">บทบาท (role)</label><select id="defaultRoleSelect"></select><label for="defaultAssigneeSelect">คนที่ทำหน้าที่</label><select id="defaultAssigneeSelect"></select></div><div class="participant-editor"><h3>แก้บล็อกที่เลือก</h3><label for="selectedWorkflowSelect">WF</label><select id="selectedWorkflowSelect" disabled></select><label for="selectedRoleSelect">บทบาท (role)</label><select id="selectedRoleSelect" disabled></select><label for="selectedAssigneeSelect">คนที่ทำหน้าที่</label><select id="selectedAssigneeSelect" disabled></select><label>Action</label><div class="action-options"><label><input id="actionReview" type="checkbox" disabled>ตรวจสอบ</label><label><input id="actionSign" type="checkbox" disabled>ลงนาม</label><label><input id="actionApprove" type="checkbox" disabled>อนุมัติ</label></div><small id="selectedBlockInfo">ยังไม่ได้เลือกบล็อก</small></div><button id="addBtn" disabled>+ เพิ่มบล็อกผู้เกี่ยวข้อง</button><small>WF, role, คนที่ทำหน้าที่ และ action จะถูกเก็บใน JSON แต่ไม่แสดงในบล็อกเอกสาร</small></aside>
                 <div class="stage"><div class="page" id="page"><canvas class="pdf-canvas" id="pdfCanvas"></canvas><span class="page-label" id="pageLabel">ยังไม่ได้อัปโหลด PDF</span></div><div class="coords" id="coords">กรุณาอัปโหลด PDF ก่อนเริ่มวางบล็อก</div></div>
             </section>
         </main>
@@ -506,12 +617,21 @@
                 const bookmarkPage = document.getElementById('bookmarkPage');
                 const bookmarkAddBtn = document.getElementById('bookmarkAddBtn');
                 const bookmarkList = document.getElementById('bookmarkList');
+                const bookmarkCount = document.getElementById('bookmarkCount');
+                const templateName = document.getElementById('templateName');
+                const templateSelect = document.getElementById('templateSelect');
+                const templateSaveBtn = document.getElementById('templateSaveBtn');
+                const templateLoadBtn = document.getElementById('templateLoadBtn');
+                const templateDeleteBtn = document.getElementById('templateDeleteBtn');
+                const templateInfo = document.getElementById('templateInfo');
+                const TEMPLATE_STORAGE_KEY = 'pdfbox-layout-templates';
+                const docIdInput = document.getElementById('docIdInput');
+                const generatePdfBtn = document.getElementById('generatePdfBtn');
+                const GENERATE_PDF_ENDPOINT = '../pdf/generate';
                 const fields = [];
                 const participants = [];
-                const bookmarks = [
-                    {id: 'bookmark-1', name: 'หน้าลงนามคณบดี', page: 1}
-                ];
-                let bookmarkSequence = 2;
+                const bookmarks = [];
+                let bookmarkSequence = 1;
                 const workflows = [
                     {id: 'CONTRACT', name: 'สัญญา'},
                     {id: 'PROCUREMENT_DOCUMENT', name: 'เอกสารซื้อจ้าง'},
@@ -533,6 +653,7 @@
                 let pageWidth = 595;
                 let pageHeight = 842;
                 let pdfFileName = null;
+                let selectedPdfFile = null;
                 let documentPdf = null;
                 let currentPage = 1;
                 let totalPages = 0;
@@ -696,6 +817,14 @@
 
                 function renderBookmarkList() {
                     bookmarkList.innerHTML = '';
+                    bookmarkCount.textContent = bookmarks.length;
+                    if (!bookmarks.length) {
+                        const empty = document.createElement('li');
+                        empty.className = 'bookmark-empty';
+                        empty.innerHTML = 'ยังไม่มี Bookmark<br><small>อัปโหลด PDF หรือเพิ่มรายการด้านบน</small>';
+                        bookmarkList.appendChild(empty);
+                        return;
+                    }
                     bookmarks
                        .slice()
                        .sort((a, b) => a.page - b.page)
@@ -703,7 +832,9 @@
                            const item = document.createElement('li');
                            item.className = 'bookmark-item';
                            const label = document.createElement('span');
+                           label.className = 'bookmark-link';
                            label.textContent = `${bookmark.name} · หน้า ${bookmark.page}`;
+                           label.style.paddingLeft = `${Math.max(0, Number(bookmark.level) || 0) * 14}px`;
                            label.title = 'คลิกเพื่อไปยังหน้านี้';
                            label.style.cursor = 'pointer';
                            label.addEventListener('click', () => showPage(bookmark.page));
@@ -721,6 +852,52 @@
                            item.appendChild(removeBtn);
                            bookmarkList.appendChild(item);
                        });
+                }
+
+                async function loadPdfBookmarks(pdfDocument) {
+                    const outline = await pdfDocument.getOutline();
+                    const loaded = [];
+
+                    async function resolvePage(destination) {
+                        if (!destination)
+                            return null;
+                        const explicitDestination = typeof destination === 'string'
+                           ? await pdfDocument.getDestination(destination)
+                           : destination;
+                        if (!Array.isArray(explicitDestination) || explicitDestination.length === 0)
+                            return null;
+                        const pageReference = explicitDestination[0];
+                        if (Number.isInteger(pageReference))
+                            return pageReference + 1;
+                        try {
+                            return (await pdfDocument.getPageIndex(pageReference)) + 1;
+                        } catch (error) {
+                            console.warn('ไม่สามารถหาหน้าที่ bookmark อ้างอิงได้', error);
+                            return null;
+                        }
+                    }
+
+                    async function visit(items, level) {
+                        for (const item of items || []) {
+                            const pageNo = await resolvePage(item.dest);
+                            const name = String(item.title || '').trim();
+                            if (name && pageNo && pageNo <= pdfDocument.numPages) {
+                                loaded.push({
+                                    id: `bookmark-${bookmarkSequence++}`,
+                                    name,
+                                    page: pageNo,
+                                    level
+                                });
+                            }
+                            await visit(item.items, level + 1);
+                        }
+                    }
+
+                    await visit(outline, 0);
+                    bookmarks.length = 0;
+                    bookmarks.push(...loaded);
+                    renderBookmarkList();
+                    return loaded.length;
                 }
 
                 function addBookmark() {
@@ -760,7 +937,7 @@
 
                 function addBlock() {
                     const defaultBox = {xRatio: 0.31933, yRatio: 0.61671, widthRatio: 0.45714, heightRatio: 0.18775};
-                    const field = {id: `signature-${sequence++}`, page: 1, x: page.clientWidth * defaultBox.xRatio, y: page.clientHeight * defaultBox.yRatio, w: page.clientWidth * defaultBox.widthRatio, h: page.clientHeight * defaultBox.heightRatio, fontName: 'TH Sarabun', fontSize: 12, hiddenRows: [], reviewAction: true, signAction: true, approveAction: true, signText: 'ลงชื่อ', signatureImage: null, committee: 'ประธานกรรมการ', signerName: '(ชื่อ-นามสกุล)', position: 'ตำแหน่ง', actingForPresident: '', organization: 'หน่วยงาน', signedDate: thaiDate()};
+                    const field = {id: `signature-${sequence++}`, page: 1, x: page.clientWidth * defaultBox.xRatio, y: page.clientHeight * defaultBox.yRatio, w: page.clientWidth * defaultBox.widthRatio, h: page.clientHeight * defaultBox.heightRatio, fontName: 'TH Sarabun', fontSize: 16, hiddenRows: [], reviewAction: true, signAction: true, approveAction: true, signText: 'ลงชื่อ', signatureImage: null, committee: 'ประธานกรรมการ', signerName: '(ชื่อ-นามสกุล)', position: 'ตำแหน่ง', actingForPresident: '', organization: 'หน่วยงาน', signedDate: thaiDate()};
                     const selectedWorkflow = workflows.find(workflow => workflow.id === defaultWorkflowSelect.value) || workflows[0];
                     const selectedRole = activeRoles().find(role => role.id === defaultRoleSelect.value) || activeRoles()[0] || roles[0];
                     const selectedPerson = participants.find(person => person.id === defaultAssigneeSelect.value);
@@ -854,7 +1031,7 @@
                         size.title = 'ขนาดตัวอักษร (pt)';
                         size.addEventListener('pointerdown', event => event.stopPropagation());
                         size.addEventListener('input', () => {
-                            field.fontSize = Math.max(8, Math.min(72, Number(size.value) || 12));
+                            field.fontSize = Math.max(8, Math.min(72, Number(size.value) || 16));
                             block.style.setProperty('--block-font-size', `${field.fontSize}pt`);
                         });
                         tools.appendChild(size);
@@ -1063,6 +1240,56 @@
                     return result;
                 }
 
+                async function generatePdf() {
+                    const docId = docIdInput.value.trim();
+                    if (!selectedPdfFile) {
+                        coords.textContent = 'กรุณาอัปโหลด PDF (ปุ่ม "อัปโหลด PDF ก่อนวาง") ก่อนสร้าง PDF';
+                        return;
+                    }
+                    const missing = missingAssignments();
+                    if (missing.length && !confirm(`ยังมี ${missing.length} บล็อกที่ไม่ได้เลือก role หรือผู้ทำหน้าที่ ต้องการสร้าง PDF ต่อหรือไม่?`))
+                        return;
+                    const originalLabel = generatePdfBtn.textContent;
+                    generatePdfBtn.disabled = true;
+                    generatePdfBtn.textContent = 'กำลังสร้าง PDF...';
+                    coords.textContent = 'กำลังอัปโหลด PDF และสร้างเอกสาร...';
+                    try {
+                        const body = payload();
+                        body.fileName = docId || (pdfFileName ? pdfFileName.replace(/\.pdf$/i, '') : 'saved-document');
+                        const formData = new FormData();
+                        formData.append('pdfFile', selectedPdfFile, selectedPdfFile.name || 'document.pdf');
+                        formData.append('payload', JSON.stringify(body));
+                        const response = await fetch(GENERATE_PDF_ENDPOINT, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (!response.ok) {
+                            let detail = '';
+                            try {
+                                const contentType = response.headers.get('content-type') || '';
+                                detail = contentType.includes('application/json')
+                                   ? (await response.json()).message || ''
+                                   : await response.text();
+                            } catch (readError) {
+                                // เซิร์ฟเวอร์อาจไม่ส่งรายละเอียดข้อผิดพลาดกลับมา
+                            }
+                            throw new Error(`เซิร์ฟเวอร์ตอบกลับ ${response.status}${detail ? `: ${detail}` : ''}`);
+                        }
+                        const blob = await response.blob();
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${(docId || 'saved-document').replace(/[\\/]+/g, '_').replace(/\.pdf$/i, '')}.pdf`;
+                        link.click();
+                        setTimeout(() => URL.revokeObjectURL(link.href), 0);
+                        coords.textContent = 'สร้าง PDF สำเร็จ กำลังดาวน์โหลดไฟล์';
+                    } catch (error) {
+                        coords.textContent = `สร้าง PDF ไม่สำเร็จ: ${error.message}`;
+                    } finally {
+                        generatePdfBtn.disabled = false;
+                        generatePdfBtn.textContent = originalLabel;
+                    }
+                }
+
                 function missingAssignments() {
                     return fields.filter(field => !field.roleId || !field.assigneeId);
                 }
@@ -1078,6 +1305,93 @@
                     return data;
                 }
 
+                function loadTemplateStore() {
+                    try {
+                        const raw = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+                        const parsed = raw ? JSON.parse(raw) : {};
+                        return parsed && typeof parsed === 'object' ? parsed : {};
+                    } catch (error) {
+                        console.warn('อ่านรายการ template ไม่สำเร็จ', error);
+                        return {};
+                    }
+                }
+
+                function saveTemplateStore(store) {
+                    try {
+                        localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(store));
+                        return true;
+                    } catch (error) {
+                        console.warn('บันทึก template ไม่สำเร็จ (พื้นที่ localStorage อาจเต็ม)', error);
+                        return false;
+                    }
+                }
+
+                function renderTemplateSelect(selectName) {
+                    const store = loadTemplateStore();
+                    const names = Object.keys(store).sort((a, b) => a.localeCompare(b, 'th'));
+                    templateSelect.innerHTML = '<option value="">— เลือก Template —</option>' +
+                       names.map(name => `<option value="${name.replace(/"/g, '&quot;')}">${name}</option>`).join('');
+                    if (selectName && names.includes(selectName))
+                        templateSelect.value = selectName;
+                }
+
+                function saveCurrentAsTemplate() {
+                    const name = templateName.value.trim();
+                    if (!name) {
+                        templateInfo.textContent = 'กรุณาตั้งชื่อ Template ก่อนบันทึก';
+                        templateName.focus();
+                        return;
+                    }
+                    const store = loadTemplateStore();
+                    if (store[name] && !confirm(`มี Template ชื่อ "${name}" อยู่แล้ว ต้องการบันทึกทับหรือไม่?`))
+                        return;
+                    store[name] = payload();
+                    if (saveTemplateStore(store)) {
+                        renderTemplateSelect(name);
+                        templateInfo.textContent = `บันทึก Template "${name}" แล้ว (${fields.length} บล็อก)`;
+                    } else {
+                        templateInfo.textContent = 'บันทึก Template ไม่สำเร็จ พื้นที่ localStorage อาจเต็ม (ลองลบรูปลายเซ็นหรือ Template เก่าออกก่อน)';
+                    }
+                }
+
+                async function loadSelectedTemplate() {
+                    const name = templateSelect.value;
+                    if (!name) {
+                        templateInfo.textContent = 'กรุณาเลือก Template ที่ต้องการโหลดก่อน';
+                        return;
+                    }
+                    const store = loadTemplateStore();
+                    const data = store[name];
+                    if (!data) {
+                        templateInfo.textContent = `ไม่พบ Template "${name}"`;
+                        return;
+                    }
+                    if (fields.length && !confirm(`โหลด Template "${name}" จะแทนที่บล็อก/รายชื่อ/bookmark ปัจจุบันทั้งหมด ดำเนินการต่อหรือไม่?`))
+                        return;
+                    try {
+                        await restoreFromPayload(data);
+                        templateName.value = name;
+                        templateInfo.textContent = `โหลด Template "${name}" แล้ว (${fields.length} บล็อก)`;
+                    } catch (error) {
+                        templateInfo.textContent = `โหลด Template ไม่สำเร็จ: ${error.message}`;
+                    }
+                }
+
+                function deleteSelectedTemplate() {
+                    const name = templateSelect.value;
+                    if (!name) {
+                        templateInfo.textContent = 'กรุณาเลือก Template ที่ต้องการลบก่อน';
+                        return;
+                    }
+                    if (!confirm(`ลบ Template "${name}" ออกจากเบราว์เซอร์นี้หรือไม่?`))
+                        return;
+                    const store = loadTemplateStore();
+                    delete store[name];
+                    saveTemplateStore(store);
+                    renderTemplateSelect();
+                    templateInfo.textContent = `ลบ Template "${name}" แล้ว`;
+                }
+
                 function upsertParticipant(person) {
                     if (!person || !person.name)
                         return null;
@@ -1089,12 +1403,26 @@
                     return next;
                 }
 
-                function restoreFromPayload(data) {
-                    if (!data || !Array.isArray(data.signatureFields || data.involvedPartyFields)) {
+                function templateFieldList(data) {
+                    const candidates = [
+                        data && data.signatureFields,
+                        data && data.involvedPartyFields,
+                        data && data.fields,
+                        data && data.boxes
+                    ];
+                    return candidates.find(Array.isArray) || null;
+                }
+
+                async function restoreFromPayload(data) {
+                    if (typeof data === 'string')
+                        data = JSON.parse(data);
+                    if (data && data.payload && !templateFieldList(data))
+                        data = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload;
+
+                    const sourceFields = templateFieldList(data);
+                    if (!data || !sourceFields) {
                         throw new Error('JSON ไม่ใช่รูปแบบ PDFBox involved party fields');
                     }
-
-                    const sourceFields = data.signatureFields || data.involvedPartyFields;
                     if (Array.isArray(data.documentRoles) && data.documentRoles.length) {
                         documentRoleIds.clear();
                         data.documentRoles.forEach(role => {
@@ -1146,7 +1474,7 @@
                             w: Number(item.widthRatio != null ? item.widthRatio * size.displayWidth : item.w || 250),
                             h: Number(item.heightRatio != null ? item.heightRatio * size.displayHeight : item.h || 205),
                             fontName: item.fontName || 'TH Sarabun',
-                            fontSize: Number(item.fontSize || 12),
+                            fontSize: Number(item.fontSize || 16),
                             hiddenRows: Array.isArray(item.hiddenRows) ? item.hiddenRows : [],
                             reviewAction: item.reviewAction == null ? actionEnabled(itemActions.review) : actionEnabled(item.reviewAction),
                             signAction: item.signAction == null ? actionEnabled(itemActions.sign) : actionEnabled(item.signAction),
@@ -1187,7 +1515,10 @@
                     renderBookmarkList();
                     bookmarkPage.max = totalPages || '';
                     bookmarkPage.value = currentPage;
-                    render();
+                    if (documentPdf && currentPage >= 1 && currentPage <= documentPdf.numPages)
+                        await showPage(currentPage);
+                    else
+                        render();
                     if (selectedFieldId)
                         select(selectedFieldId);
                     coords.textContent = `โหลด JSON PDFBox แล้ว ${fields.length} บล็อก`;
@@ -1227,6 +1558,8 @@
                     const file = event.target.files[0];
                     if (!file)
                         return;
+                    selectedPdfFile = file;
+                    const hasTemplateFields = fields.length > 0;
                     if (!pdfJsReady) {
                         coords.textContent = 'ไม่พบ PDF.js กรุณาตรวจสอบไฟล์ ../js/pdf.min.js และ ../js/pdf.worker.min.js';
                         event.target.value = '';
@@ -1242,6 +1575,9 @@
                             return;
                         totalPages = documentPdf.numPages;
                         currentPage = 1;
+                        const loadedBookmarkCount = await loadPdfBookmarks(documentPdf);
+                        if (requestId !== renderRequestId)
+                            return;
                         document.getElementById('pageCounter').textContent = `หน้า 1 / ${totalPages}`;
                         document.getElementById('prevPageBtn').disabled = true;
                         document.getElementById('nextPageBtn').disabled = totalPages <= 1;
@@ -1262,15 +1598,20 @@
                         pdfCanvas.height = Math.floor(viewport.height * ratio);
                         if (!await renderPdfToCanvas(pdfPage, viewport, ratio, requestId) || requestId !== renderRequestId)
                             return;
-                        fields.length = 0;
                         render();
                         addButton.disabled = false;
                         pageLabel.textContent = `หน้า 1 จาก ${documentPdf.numPages} · ${Math.round(pageWidth)} × ${Math.round(pageHeight)} pt`;
-                        coords.textContent = `เปิด ${file.name} แล้ว — เพิ่มบล็อกผู้เกี่ยวข้องแล้วลากไปวางได้`;
+                        const bookmarkMessage = loadedBookmarkCount
+                           ? ` · โหลด bookmark ${loadedBookmarkCount} รายการจาก PDF`
+                           : ' · PDF ไม่มี bookmark';
+                        coords.textContent = (hasTemplateFields
+                           ? `เปิด ${file.name} แล้ว — แสดง ${fields.length} บล็อกจาก JSON Template`
+                           : `เปิด ${file.name} แล้ว — เพิ่มบล็อกผู้เกี่ยวข้องแล้วลากไปวางได้`) + bookmarkMessage;
                         bookmarkPage.max = totalPages || '';
                         bookmarkPage.value = currentPage;
                     } catch (error) {
                         addButton.disabled = true;
+                        selectedPdfFile = null;
                         coords.textContent = `เปิด PDF ไม่สำเร็จ: ${error.message}`;
                     }
                 });
@@ -1281,7 +1622,7 @@
                         return;
                     try {
                         const text = await file.text();
-                        restoreFromPayload(JSON.parse(text));
+                        await restoreFromPayload(JSON.parse(text));
                     } catch (error) {
                         coords.textContent = `โหลด JSON PDFBox ไม่สำเร็จ: ${error.message}`;
                     } finally {
@@ -1390,6 +1731,7 @@
                     dialog.showModal();
                 });
                 document.getElementById('closeBtn').addEventListener('click', () => dialog.close());
+                generatePdfBtn.addEventListener('click', generatePdf);
                 document.getElementById('downloadBtn').addEventListener('click', () => {
                     const blob = new Blob([JSON.stringify(payload(), null, 2)], {type: 'application/json;charset=utf-8'});
                     const link = document.createElement('a');
@@ -1398,9 +1740,24 @@
                     link.click();
                     setTimeout(() => URL.revokeObjectURL(link.href), 0);
                 });
+                templateSaveBtn.addEventListener('click', saveCurrentAsTemplate);
+                templateLoadBtn.addEventListener('click', loadSelectedTemplate);
+                templateDeleteBtn.addEventListener('click', deleteSelectedTemplate);
+                templateSelect.addEventListener('change', () => {
+                    if (templateSelect.value)
+                        templateName.value = templateSelect.value;
+                });
+                templateName.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        templateSaveBtn.click();
+                    }
+                });
+
                 renderDocumentRoleList();
                 renderDefaultSelectors();
                 renderBookmarkList();
+                renderTemplateSelect();
             })();
         </script>
     </body>
