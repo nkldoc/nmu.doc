@@ -196,8 +196,27 @@ public class PdfManagerServlet extends HttpServlet {
     }
 
     /**
-     * Appends the bookmarks supplied by layout.html to the PDF outline.
-     * Payload page numbers are one-based, while PDFBox page indexes are zero-based.
+     * Appends
+     * the
+     * bookmarks
+     * supplied
+     * by
+     * layout.html
+     * to
+     * the
+     * PDF
+     * outline.
+     * Payload
+     * page
+     * numbers
+     * are
+     * one-based,
+     * while
+     * PDFBox
+     * page
+     * indexes
+     * are
+     * zero-based.
      */
     private void addBookmarks(PDDocument document, JsonArray bookmarks) throws IOException {
         if (bookmarks == null || bookmarks.size() == 0) {
@@ -394,13 +413,7 @@ public class PdfManagerServlet extends HttpServlet {
 
     private void drawDottedLine(PDPageContentStream content, float startX,
             float endX, float y) throws IOException {
-        content.setStrokingColor(85, 85, 85);
-        content.setLineWidth(.45f);
-        content.setLineDashPattern(new float[]{1, 1.5f}, 0);
-        content.moveTo(startX, y);
-        content.lineTo(endX, y);
-        content.stroke();
-        content.setLineDashPattern(new float[]{}, 0);
+        // ไม่วาดเส้นใต้ข้อความ (จุดไข่ปลา) แล้ว เพื่อให้ตรงกับ UI ใน layout.html
     }
 
     private void drawSignatureImage(PDDocument document, PDPageContentStream content,

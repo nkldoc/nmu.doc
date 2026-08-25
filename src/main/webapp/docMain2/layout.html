@@ -404,7 +404,7 @@
                 height:17px;
                 padding:0;
                 border:0;
-                border-bottom:1px dotted #7c8797;
+                border-bottom:0;
                 outline:0;
                 background:transparent;
                 color:var(--ink);
@@ -447,7 +447,7 @@
                 min-height:42px;
                 height:42px;
                 gap:1px;
-                border-bottom:1px dotted #555
+                border-bottom:0
             }
             .sig-row .sign-prefix{
                 flex:0 1 42px;
@@ -587,7 +587,7 @@
             <section class="workspace">
                 <aside class="side">
                     <!-- <h2>บล็อกผู้เกี่ยวข้อง</h2><ol><li>เลือก WF</li><li>ติ๊กบทบาทที่เกี่ยวข้องในเอกสารชุดนี้</li><li>เลือกบทบาทและคนที่ทำหน้าที่ให้แต่ละบล็อก</li><li>กำหนด action ตรวจสอบ/ลงนาม/อนุมัติ</li></ol>-->
-                    <div class="participant-editor"><h3>รายชื่อผู้เกี่ยวข้องในเอกสาร</h3><input id="participantName" type="text" placeholder="ชื่อ-นามสกุล"><button id="participantAddBtn" type="button">+ เพิ่มรายชื่อ</button><ol class="participant-list" id="participantList"></ol></div><div class="participant-editor"><h3>บทบาทที่เกี่ยวข้องในเอกสารชุดนี้</h3><div class="role-checklist" id="documentRoleList"></div><small>ระบบจะ run ตามลำดับ 1-8 ตามรายการที่ติ๊กไว้</small></div><div class="participant-editor bookmark-panel"><div class="bookmark-heading"><h3>จุดคั่นหน้า</h3><span class="bookmark-count" id="bookmarkCount">0</span></div><div class="bookmark-fields"><div class="bookmark-field"><label for="bookmarkName">ชื่อ Bookmark</label><input id="bookmarkName" type="text" placeholder="เช่น หน้าลงนามคณบดี"></div><div class="bookmark-field"><label for="bookmarkPage">หน้า</label><input id="bookmarkPage" type="number" min="1" value="1"></div></div><button class="bookmark-add" id="bookmarkAddBtn" type="button">+ เพิ่ม Bookmark</button><ol id="bookmarkList"></ol><small class="bookmark-help">Bookmark จาก PDF จะโหลดอัตโนมัติ คลิกชื่อเพื่อไปยังหน้า หรือลบรายการที่ไม่ต้องการได้</small></div><div class="participant-editor"><h3>Template ผัง (บันทึกไว้ใช้ซ้ำ)</h3><label for="templateName">ชื่อ Template</label><input id="templateName" type="text" placeholder="เช่น สัญญา - คณะ ABC"><button id="templateSaveBtn" type="button">💾 บันทึกเป็น Template</button><label for="templateSelect">Template ที่บันทึกไว้</label><div class="template-select-row"><select id="templateSelect"><option value="">— เลือก Template —</option></select></div><div class="template-actions"><button id="templateLoadBtn" type="button">📂 โหลด</button><button id="templateDeleteBtn" type="button" class="danger">🗑 ลบ</button></div><small id="templateInfo">Template เก็บ WF/role/ผู้เกี่ยวข้อง/bookmark/ตำแหน่งบล็อกทั้งหมดไว้ใน browser นี้ (localStorage) เพื่อโหลดมาใช้กับเอกสารชุดใหม่ได้อีก</small></div><div class="participant-editor"><h3>ค่าเริ่มต้นตอนเพิ่มบล็อก</h3><label for="defaultWorkflowSelect">WF</label><select id="defaultWorkflowSelect"></select><label for="defaultRoleSelect">บทบาท (role)</label><select id="defaultRoleSelect"></select><label for="defaultAssigneeSelect">คนที่ทำหน้าที่</label><select id="defaultAssigneeSelect"></select></div><div class="participant-editor"><h3>แก้บล็อกที่เลือก</h3><label for="selectedWorkflowSelect">WF</label><select id="selectedWorkflowSelect" disabled></select><label for="selectedRoleSelect">บทบาท (role)</label><select id="selectedRoleSelect" disabled></select><label for="selectedAssigneeSelect">คนที่ทำหน้าที่</label><select id="selectedAssigneeSelect" disabled></select><label>Action</label><div class="action-options"><label><input id="actionReview" type="checkbox" disabled>ตรวจสอบ</label><label><input id="actionSign" type="checkbox" disabled>ลงนาม</label><label><input id="actionApprove" type="checkbox" disabled>อนุมัติ</label></div><small id="selectedBlockInfo">ยังไม่ได้เลือกบล็อก</small></div><button id="addBtn" disabled>+ เพิ่มบล็อกผู้เกี่ยวข้อง</button><small>WF, role, คนที่ทำหน้าที่ และ action จะถูกเก็บใน JSON แต่ไม่แสดงในบล็อกเอกสาร</small></aside>
+                    <div class="participant-editor"><h3>รายชื่อผู้เกี่ยวข้องในเอกสาร</h3><input id="participantUserId" type="text" inputmode="numeric" placeholder="user_id"><input id="participantName" type="text" placeholder="ชื่อ-นามสกุล"><button id="participantAddBtn" type="button">+ เพิ่มรายชื่อ</button><ol class="participant-list" id="participantList"></ol></div><div class="participant-editor"><h3>บทบาทที่เกี่ยวข้องในเอกสารชุดนี้</h3><div class="role-checklist" id="documentRoleList"></div><small>ระบบจะ run ตามลำดับ 1-8 ตามรายการที่ติ๊กไว้</small></div><div class="participant-editor bookmark-panel"><div class="bookmark-heading"><h3>จุดคั่นหน้า</h3><span class="bookmark-count" id="bookmarkCount">0</span></div><div class="bookmark-fields"><div class="bookmark-field"><label for="bookmarkName">ชื่อ Bookmark</label><input id="bookmarkName" type="text" placeholder="เช่น หน้าลงนามคณบดี"></div><div class="bookmark-field"><label for="bookmarkPage">หน้า</label><input id="bookmarkPage" type="number" min="1" value="1"></div></div><button class="bookmark-add" id="bookmarkAddBtn" type="button">+ เพิ่ม Bookmark</button><ol id="bookmarkList"></ol><small class="bookmark-help">Bookmark จาก PDF จะโหลดอัตโนมัติ คลิกชื่อเพื่อไปยังหน้า หรือลบรายการที่ไม่ต้องการได้</small></div><div class="participant-editor"><h3>Template ผัง (บันทึกไว้ใช้ซ้ำ)</h3><label for="templateName">ชื่อ Template</label><input id="templateName" type="text" placeholder="เช่น สัญญา - คณะ ABC"><button id="templateSaveBtn" type="button">💾 บันทึกเป็น Template</button><label for="templateSelect">Template ที่บันทึกไว้</label><div class="template-select-row"><select id="templateSelect"><option value="">— เลือก Template —</option></select></div><div class="template-actions"><button id="templateLoadBtn" type="button">📂 โหลด</button><button id="templateDeleteBtn" type="button" class="danger">🗑 ลบ</button></div><small id="templateInfo">Template เก็บ WF/role/ผู้เกี่ยวข้อง/bookmark/ตำแหน่งบล็อกทั้งหมดไว้ใน browser นี้ (localStorage) เพื่อโหลดมาใช้กับเอกสารชุดใหม่ได้อีก</small></div><div class="participant-editor"><h3>ค่าเริ่มต้นตอนเพิ่มบล็อก</h3><label for="defaultWorkflowSelect">WF</label><select id="defaultWorkflowSelect"></select><label for="defaultRoleSelect">บทบาท (role)</label><select id="defaultRoleSelect"></select><label for="defaultAssigneeSelect">คนที่ทำหน้าที่</label><select id="defaultAssigneeSelect"></select></div><div class="participant-editor"><h3>แก้บล็อกที่เลือก</h3><label for="selectedWorkflowSelect">WF</label><select id="selectedWorkflowSelect" disabled></select><label for="selectedRoleSelect">บทบาท (role)</label><select id="selectedRoleSelect" disabled></select><label for="selectedAssigneeSelect">คนที่ทำหน้าที่</label><select id="selectedAssigneeSelect" disabled></select><label>Action</label><div class="action-options"><label><input id="actionReview" type="checkbox" disabled>ตรวจสอบ</label><label><input id="actionSign" type="checkbox" disabled>ลงนาม</label><label><input id="actionApprove" type="checkbox" disabled>อนุมัติ</label></div><small id="selectedBlockInfo">ยังไม่ได้เลือกบล็อก</small></div><button id="addBtn" disabled>+ เพิ่มบล็อกผู้เกี่ยวข้อง</button><small>WF, role, คนที่ทำหน้าที่ และ action จะถูกเก็บใน JSON แต่ไม่แสดงในบล็อกเอกสาร</small></aside>
                 <div class="stage"><div class="page" id="page"><canvas class="pdf-canvas" id="pdfCanvas"></canvas><span class="page-label" id="pageLabel">ยังไม่ได้อัปโหลด PDF</span></div><div class="coords" id="coords">กรุณาอัปโหลด PDF ก่อนเริ่มวางบล็อก</div></div>
             </section>
         </main>
@@ -808,7 +808,7 @@
                     list.innerHTML = '';
                     participants.forEach(person => {
                         const item = document.createElement('li');
-                        item.textContent = person.name;
+                        item.textContent = `${person.name} (user_id: ${person.user_id})`;
                         list.appendChild(item);
                     });
                     renderDefaultSelectors();
@@ -948,6 +948,7 @@
                     field.roleId = selectedRole.id;
                     field.roleName = selectedRole.name;
                     field.assigneeId = selectedPerson ? selectedPerson.id : '';
+                    field.user_id = selectedPerson ? selectedPerson.user_id : '';
                     field.assigneeName = selectedPerson ? selectedPerson.name : '';
                     field.approval = 'อนุมัติ';
                     applyRoleDefaults(field, selectedRole);
@@ -1019,10 +1020,11 @@
                         const block = document.createElement('div');
                         block.className = `block ${field.id === selectedFieldId ? 'selected' : ''}`;
                         block.dataset.id = field.id;
+                        block.dataset.userId = field.user_id || '';
                         Object.assign(block.style, {left: `${field.x}px`, top: `${field.y}px`, width: `${field.w}px`, height: `${field.h}px`, '--block-font-size': `${field.fontSize}pt`});
                         const tools = document.createElement('div');
                         tools.className = 'block-tools';
-                        tools.innerHTML = '<span>TH Sarabun</span><span>ขนาด</span>';
+                        tools.innerHTML = `<span>user_id: ${field.user_id || 'ยังไม่เลือก'}</span><span>TH Sarabun</span><span>ขนาด</span>`;
                         const size = document.createElement('input');
                         size.type = 'number';
                         size.min = '8';
@@ -1167,7 +1169,7 @@
                         workflows: workflows.map(workflow => ({id: workflow.id, name: workflow.name})),
                         roles: roles.map(role => ({id: role.id, order: role.order, name: role.name})),
                         documentRoles: activeRoles().map(role => ({id: role.id, order: role.order, name: role.name})),
-                        participants: participants.map(person => ({id: person.id, name: person.name})),
+                        participants: participants.map(person => ({id: person.id, user_id: person.user_id, name: person.name})),
                         bookmarks: bookmarks
                            .slice()
                            .sort((a, b) => a.page - b.page)
@@ -1179,6 +1181,7 @@
                                 roleId: field.roleId,
                                 roleName: field.roleName,
                                 assigneeId: field.assigneeId,
+                                user_id: field.user_id || field.assigneeId,
                                 assigneeName: field.assigneeName,
                                 actions: {
                                     review: field.reviewAction !== false,
@@ -1193,6 +1196,7 @@
                                 roleId: field.roleId,
                                 roleName: field.roleName,
                                 assigneeId: field.assigneeId,
+                                user_id: field.user_id || field.assigneeId,
                                 assigneeName: field.assigneeName,
                                 page: field.page,
                                 xRatio: +(field.x / page.clientWidth).toFixed(5),
@@ -1395,10 +1399,11 @@
                 function upsertParticipant(person) {
                     if (!person || !person.name)
                         return null;
-                    const existing = participants.find(item => item.id === person.id || item.name === person.name);
+                    const userId = String(person.user_id != null ? person.user_id : (person.id || '')).trim();
+                    const existing = participants.find(item => item.user_id === userId || item.name === person.name);
                     if (existing)
                         return existing;
-                    const next = {id: person.id || `person-${participants.length + 1}`, name: person.name};
+                    const next = {id: userId || `person-${participants.length + 1}`, user_id: userId || `person-${participants.length + 1}`, name: person.name};
                     participants.push(next);
                     return next;
                 }
@@ -1445,7 +1450,7 @@
                     }
                     sourceFields.forEach(item => {
                         if (item.assigneeName)
-                            upsertParticipant({id: item.assigneeId, name: item.assigneeName});
+                            upsertParticipant({id: item.assigneeId, user_id: item.user_id, name: item.assigneeName});
                     });
 
                     pdfFileName = data.samplePdf && data.samplePdf.fileName ? data.samplePdf.fileName : pdfFileName;
@@ -1464,7 +1469,7 @@
                         const roleId = normalizedRoleId(item.roleId || '');
                         const role = roles.find(candidate => candidate.id === roleId);
                         const workflow = workflows.find(candidate => candidate.id === item.workflowId) || workflows[0];
-                        const assignee = upsertParticipant({id: item.assigneeId, name: item.assigneeName});
+                        const assignee = upsertParticipant({id: item.assigneeId, user_id: item.user_id, name: item.assigneeName});
                         const itemActions = item.actions || {};
                         const restoredField = {
                             id: item.id || `participant-role-${index + 1}`,
@@ -1492,6 +1497,7 @@
                             roleId: role ? role.id : roleId,
                             roleName: role ? role.name : normalizedRoleName(item.roleName || ''),
                             assigneeId: assignee ? assignee.id : '',
+                            user_id: assignee ? assignee.user_id : '',
                             assigneeName: assignee ? assignee.name : ''
                         };
                         if (role && role.id === 'DEAN') {
@@ -1633,20 +1639,38 @@
                 addButton.addEventListener('click', addBlock);
                 document.getElementById('participantAddBtn').addEventListener('click', () => {
                     const input = document.getElementById('participantName');
+                    const userIdInput = document.getElementById('participantUserId');
                     const name = input.value.trim();
-                    if (!name)
+                    const userId = userIdInput.value.trim();
+                    if (!userId || !name) {
+                        coords.textContent = 'กรุณากรอก user_id และชื่อ-นามสกุล';
                         return;
+                    }
+                    if (!/^\d+$/.test(userId)) {
+                        coords.textContent = 'user_id ต้องเป็นตัวเลขเท่านั้น';
+                        userIdInput.focus();
+                        return;
+                    }
+                    if (participants.some(person => person.user_id === userId)) {
+                        coords.textContent = `มี user_id ${userId} อยู่แล้ว`;
+                        return;
+                    }
                     if (participants.some(person => person.name.localeCompare(name, 'th', {sensitivity: 'base'}) === 0)) {
                         coords.textContent = `มีรายชื่อ ${name} อยู่แล้ว`;
                         return;
                     }
-                    participants.push({id: `person-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name});
+                    participants.push({id: userId, user_id: userId, name});
+                    userIdInput.value = '';
                     input.value = '';
                     renderParticipantList();
                 });
                 document.getElementById('participantName').addEventListener('keydown', event => {
                     if (event.key === 'Enter')
                         document.getElementById('participantAddBtn').click();
+                });
+                document.getElementById('participantUserId').addEventListener('keydown', event => {
+                    if (event.key === 'Enter')
+                        document.getElementById('participantName').focus();
                 });
                 bookmarkAddBtn.addEventListener('click', addBookmark);
                 bookmarkName.addEventListener('keydown', event => {
@@ -1680,6 +1704,7 @@
                         return;
                     const person = participants.find(item => item.id === selectedAssigneeSelect.value);
                     field.assigneeId = person ? person.id : '';
+                    field.user_id = person ? person.user_id : '';
                     field.assigneeName = person ? person.name : '';
                     field.signerName = person ? `(${person.name})` : field.signerName;
                     render();
